@@ -450,6 +450,60 @@ console.log(JSON.stringify({ whileMuted: whileMuted, whileUnmuted: whileUnmuted 
         self.assertTrue(out["whileUnmuted"])
 
 
+class NextLessonTests(unittest.TestCase):
+    def test_next_lesson_opens_only_after_a_perfect_run(self):
+        lesson = load_lesson()
+        pack = {
+            "title": "One check",
+            "next": "0002-next.html",
+            "nextLabel": "Next: the second lesson",
+            "screens": [
+                {
+                    "type": "intro",
+                    "title": "One idea.",
+                    "text": "A local dies on return.",
+                    "cta": "Start",
+                },
+                {
+                    "type": "pick",
+                    "title": "Where does the local live?",
+                    "choices": [
+                        {"t": "On the stack", "ok": True},
+                        {"t": "On the heap", "ok": False},
+                    ],
+                    "why": "A local occupies a stack slot until the function returns.",
+                },
+            ],
+        }
+        with tempfile.TemporaryDirectory(prefix="teach-duo-next-") as directory:
+            data = Path(directory) / "lesson.json"
+            page = Path(directory) / "0001.html"
+            data.write_text(json.dumps(pack), encoding="utf-8")
+            lesson.build_file(data, page, False)
+            script = "\n".join(scripts_of(page.read_text(encoding="utf-8")))
+        driver = r"""
+function finish(correct) {
+  restart();
+  checkBtn.onclick();
+  var cur = lesson[i];
+  selected = cur.choices.findIndex(function (c) { return correct ? c.ok : !c.ok; });
+  checkBtn.disabled = false;
+  check();
+  nextBtn.onclick();
+  return __el("app").innerHTML;
+}
+console.log(JSON.stringify({
+  missed: finish(false),
+  perfect: finish(true),
+}));
+"""
+        out = run_with_bun(script, driver)
+        self.assertIn("Answer every question correctly", out["missed"])
+        self.assertNotIn('href="0002-next.html"', out["missed"])
+        self.assertIn('href="0002-next.html"', out["perfect"])
+        self.assertNotIn("Answer every question correctly", out["perfect"])
+
+
 class SoundTests(unittest.TestCase):
     def _run(self, prelude, body):
         script = prelude + sound_script((ROOT / "assets" / "lesson.html").read_text(encoding="utf-8")) + "\n" + body

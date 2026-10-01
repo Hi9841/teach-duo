@@ -4,7 +4,7 @@ The page is [assets/lesson.html](../assets/lesson.html). You do not restyle it. 
 
 ## Shell
 
-Top bar, fixed order: restart, mute, progress, three hearts, XP. One question on screen. Check stays disabled until they answer. The feedback sheet is one or two sentences on the mechanism, then Continue. A wrong answer loses a heart and moves on. Zero hearts ends the run with Retry. The last screen shows XP, the misses, the next lesson, the reference, and one primary source.
+Top bar, fixed order: restart, mute, progress, three hearts, XP. One question on screen. Check stays disabled until they answer. The feedback sheet is one or two sentences on the mechanism, then Continue. A wrong answer loses a heart and moves on. Zero hearts ends the run with Retry. The last screen shows XP, the misses, the reference, and one primary source. The next lesson is a link only when every question in that run was correct. Any miss or skip leaves it disabled, with the line "Answer every question correctly to open the next lesson."
 
 Hearts: 3. First-try correct answers: 10 XP. Keys `1`-`4` select, Enter checks, Enter again continues.
 

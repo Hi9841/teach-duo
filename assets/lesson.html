@@ -672,11 +672,13 @@ h1.q {
   gap: 10px;
 }
 
-.end-links a {
+.end-links a,
+.end-links .end-next {
   display: flex;
   align-items: center;
   gap: 10px;
   justify-content: center;
+  width: 100%;
   border: 2px solid var(--gray-border);
   border-bottom-width: var(--lift);
   border-radius: var(--radius);
@@ -684,10 +686,27 @@ h1.q {
   text-decoration: none;
   font-weight: 800;
   font-size: 15px;
+  font-family: inherit;
+  color: var(--blue);
+  background: #fff;
 }
 
 .end-links a:hover {
   background: var(--gray-bg);
+}
+
+.end-links .end-next:disabled {
+  color: var(--muted);
+  background: var(--gray-bg);
+  cursor: not-allowed;
+}
+
+.lock-note {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  margin: 0;
 }
 
 .end-links .icon {
@@ -1292,12 +1311,19 @@ function renderEnd() {
   document.getElementById("footer").style.display = "none";
   sheet.classList.remove("show");
   progress.style.width = "100%";
-  sound("complete");
   const uniq = Array.from(new Set(mistakes));
+  const passed = uniq.length === 0;
+  if (passed) sound("complete");
   let links = '<ul class="end-links">';
   if (LESSON.next) {
-    links += '<li><a href="' + esc(LESSON.next) + '">' + icon("arrowRight") +
-      '<span>' + esc(LESSON.nextLabel) + '</span></a></li>';
+    if (passed) {
+      links += '<li><a href="' + esc(LESSON.next) + '">' + icon("arrowRight") +
+        '<span>' + esc(LESSON.nextLabel) + '</span></a></li>';
+    } else {
+      links += '<li><button type="button" class="end-next" disabled>' + icon("arrowRight") +
+        '<span>' + esc(LESSON.nextLabel) + '</span></button>' +
+        '<p class="lock-note">Answer every question correctly to open the next lesson.</p></li>';
+    }
   }
   if (LESSON.reference) {
     links += '<li><a href="' + esc(LESSON.reference) + '">' + icon("arrowRight") +
