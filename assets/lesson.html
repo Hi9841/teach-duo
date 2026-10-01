@@ -612,29 +612,13 @@ h1.q {
   font-size: 0.92em;
 }
 
-/* mascot */
-
-.mascot-row {
-  display: flex;
-  gap: 14px;
-  align-items: center;
+.bubble {
   background: #fff;
   border: 2px solid var(--gray-border);
   border-bottom-width: var(--lift);
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: var(--pad);
-}
-
-.owl {
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-}
-
-.bubble {
-  flex: 1;
-  min-width: 0;
   font-weight: 700;
   font-size: 15px;
   line-height: 1.5;
@@ -1097,14 +1081,6 @@ function renderHearts() {
   progress.style.width = Math.round((i / lesson.length) * 100) + "%";
 }
 
-function owlSVG() {
-  return '<svg class="owl" viewBox="0 0 64 64" role="img" aria-label="Mascot">' +
-    '<rect x="4" y="8" width="56" height="48" rx="16" fill="#58CC02"/>' +
-    '<circle cx="24" cy="28" r="10" fill="#fff"/><circle cx="40" cy="28" r="10" fill="#fff"/>' +
-    '<circle cx="24" cy="29" r="4" fill="#3C3C3C"/><circle cx="40" cy="29" r="4" fill="#3C3C3C"/>' +
-    '<rect x="26" y="44" width="12" height="6" rx="3" fill="#FFC800"/></svg>';
-}
-
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -1132,7 +1108,7 @@ function render() {
   if (q.type === "intro") {
     app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
-      '<div class="mascot-row">' + owlSVG() + '<div class="bubble">' + esc(q.text) + '</div></div>' +
+      '<div class="bubble">' + esc(q.text) + '</div>' +
       codeBlock(q.code, q.hl) +
       '<div class="sub">One question per screen. Three hearts. Press 1-4 to answer, Enter to check.</div>';
     skipBtn.style.display = "none";
