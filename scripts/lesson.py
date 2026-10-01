@@ -1,9 +1,231 @@
-<!DOCTYPE html>
+"""Stamp a lesson into the bundled page. Python 3.10+, standard library only."""
+import sys
+
+if __name__ == "__main__" and sys.argv[1:] in (["--version"], ["-v"], ["-V"]):
+    print("1.0.0")
+    raise SystemExit(0)
+
+import argparse
+import json
+import re
+import webbrowser
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+TYPES = {"intro", "pick", "mem", "build", "truefalse"}
+EMOJI = re.compile(
+    "[\U0001F000-\U0001FAFF\u2190-\u21FF\u2300-\u27BF\u2600-\u26FF\u2B00-\u2BFF\uFE0F]"
+)
+
+
+def quote(value):
+    escapes = {"\\": "\\\\", '"': '\\"', "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+    return '"' + "".join(
+        escapes.get(char, f"\\u{ord(char):04x}" if ord(char) < 32 else char)
+        for char in str(value)
+    ) + '"'
+
+
+def report(**fields):
+    print("\n".join(f"{key}: {quote(value)}" for key, value in fields.items()), flush=True)
+
+
+def _need(screen, key, ident):
+    value = screen.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{ident} needs {key}")
+    return value
+
+
+def _choices(screen, ident):
+    choices = screen.get("choices")
+    if not isinstance(choices, list) or len(choices) < 2:
+        raise ValueError(f"{ident} needs at least two choices")
+    correct = 0
+    lengths = []
+    for choice in choices:
+        if not isinstance(choice, dict):
+            raise ValueError(f"{ident} has a choice that is not an object")
+        text = choice.get("t")
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError(f"{ident} has an empty choice")
+        if not isinstance(choice.get("ok"), bool):
+            raise ValueError(f"{ident} choices need an ok boolean")
+        correct += choice["ok"]
+        lengths.append(len(text.split()))
+    if correct != 1:
+        raise ValueError(f"{ident} needs exactly one correct choice")
+    if max(lengths) - min(lengths) > 2:
+        raise ValueError(f"{ident} options differ in length, which leaks the answer")
+
+
+def validate(pack):
+    if not isinstance(pack, dict):
+        raise ValueError("lesson file must be one JSON object")
+    raw = json.dumps(pack, ensure_ascii=False)
+    if EMOJI.search(raw):
+        raise ValueError("lesson text contains an emoji or symbol glyph; use the icon set")
+    title = pack.get("title")
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("title is required")
+    screens = pack.get("screens")
+    if not isinstance(screens, list) or not screens:
+        raise ValueError("screens must be a non-empty list")
+    if screens[0].get("type") != "intro":
+        raise ValueError("the first screen must be an intro")
+    source = pack.get("source")
+    if source is not None:
+        if not isinstance(source, dict):
+            raise ValueError("source must be an object with label and url")
+        for key in ("label", "url"):
+            if not isinstance(source.get(key), str) or not source[key].strip():
+                raise ValueError(f"source.{key} is required")
+    for field, label in (("next", "nextLabel"), ("reference", "referenceLabel")):
+        href = pack.get(field) or ""
+        text = pack.get(label) or ""
+        if bool(href) != bool(text):
+            raise ValueError(f"{field} and {label} are set together")
+    for index, screen in enumerate(screens):
+        if not isinstance(screen, dict):
+            raise ValueError(f"screen {index + 1} is not an object")
+        kind = screen.get("type")
+        ident = screen.get("id") or f"screen {index + 1}"
+        if kind not in TYPES:
+            raise ValueError(f"{ident} has unknown type {kind}")
+        _need(screen, "title", ident)
+        if screen.get("hl") is not None and not isinstance(screen.get("hl"), int):
+            raise ValueError(f"{ident} hl must be a line number")
+        if kind == "intro":
+            _need(screen, "text", ident)
+            _need(screen, "cta", ident)
+            continue
+        _need(screen, "why", ident)
+        if kind == "build":
+            tokens = screen.get("tokens")
+            answer = screen.get("answer")
+            if not isinstance(tokens, list) or not tokens or not all(isinstance(t, str) for t in tokens):
+                raise ValueError(f"{ident} needs a token list")
+            if not isinstance(answer, list) or not answer or not all(isinstance(t, str) for t in answer):
+                raise ValueError(f"{ident} needs an answer list")
+            continue
+        _choices(screen, ident)
+        if kind == "mem":
+            for side in ("stack", "heap"):
+                cells = screen.get(side)
+                if not isinstance(cells, list) or not cells or not all(isinstance(c, str) for c in cells):
+                    raise ValueError(f"{ident} needs {side} cells")
+    return pack
+
+
+def render(pack):
+    template = PAGE
+    meta = {
+        "title": pack["title"],
+        "next": pack.get("next") or "",
+        "nextLabel": pack.get("nextLabel") or "",
+        "reference": pack.get("reference") or "",
+        "referenceLabel": pack.get("referenceLabel") or "",
+        "source": pack.get("source"),
+        "screens": pack["screens"],
+    }
+    blob = json.dumps(meta, indent=2, ensure_ascii=False)
+    blob = blob.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    if template.count("{{LESSON_PACK}}") != 1:
+        raise ValueError("template must contain LESSON_PACK once")
+    page = template.replace("{{LESSON_PACK}}", blob)
+    leftovers = sorted(set(re.findall(r"\{\{[A-Z_]+\}\}", page)))
+    if leftovers:
+        raise ValueError("unfilled template markers: " + ", ".join(leftovers))
+    return page
+
+
+def style_block():
+    template = PAGE
+    match = re.search(r"<style>\n(.*)\n</style>", template, re.DOTALL)
+    if not match:
+        raise ValueError("template has no style block")
+    return match.group(1)
+
+
+def reference_page(title, body):
+    if re.search(r"<\s*(script|style|link)\b", body, re.IGNORECASE):
+        raise ValueError("reference body is content only; the helper supplies the page")
+    safe = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return (
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
+        "<meta charset=\"UTF-8\">\n"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+        f"<title>{safe}</title>\n<style>\n{style_block()}\n</style>\n</head>\n"
+        "<body class=\"reference\">\n<main class=\"prose\">\n"
+        "<p class=\"eyebrow\">Reference</p>\n"
+        f"<h1 class=\"q\">{safe}</h1>\n"
+        f"{body.rstrip()}\n"
+        "</main>\n</body>\n</html>\n"
+    )
+
+
+def _outside_skill(path):
+    resolved = path.resolve()
+    if resolved == ROOT or ROOT in resolved.parents:
+        raise ValueError("write into the teaching workspace, not the skill directory")
+    return resolved
+
+
+def build_file(data_path, output_path, open_page):
+    pack = validate(json.loads(Path(data_path).read_text(encoding="utf-8")))
+    output = _outside_skill(Path(output_path))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(render(pack), encoding="utf-8")
+    if open_page:
+        webbrowser.open(output.as_uri())
+    return output, len(pack["screens"])
+
+
+def reference_file(fragment_path, output_path, title):
+    body = Path(fragment_path).read_text(encoding="utf-8")
+    output = _outside_skill(Path(output_path))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(reference_page(title, body), encoding="utf-8")
+    return output
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="lesson.py", add_help=True)
+    commands = parser.add_subparsers(dest="command")
+    build = commands.add_parser("build")
+    build.add_argument("data")
+    build.add_argument("output")
+    build.add_argument("--open", action="store_true")
+    reference = commands.add_parser("reference")
+    reference.add_argument("fragment")
+    reference.add_argument("output")
+    reference.add_argument("--title", required=True)
+    args = parser.parse_args()
+    if not args.command:
+        report(status="usage", hint="python scripts/lesson.py build <data.json> <output.html>")
+        return 2
+    try:
+        if args.command == "build":
+            output, count = build_file(args.data, args.output, args.open)
+            report(status="wrote", path=str(output), screens=str(count))
+        else:
+            output = reference_file(args.fragment, args.output, args.title)
+            report(status="wrote", path=str(output), kind="reference")
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        report(status="error", error=str(exc))
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+PAGE = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stack, heap, and who deletes</title>
+<title>Lesson</title>
 <style>
 /* Duo design system
    The canonical stylesheet for every lesson and reference document in a
@@ -73,6 +295,7 @@ body {
   max-width: 900px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0;
 }
 
 /* icons
@@ -98,6 +321,8 @@ body {
   line-height: 1;
   padding: 4px;
   flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
   display: grid;
   place-items: center;
 }
@@ -117,7 +342,8 @@ body {
 }
 
 .progress-track {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   height: 16px;
   background: var(--gray-border);
   border-radius: var(--radius-pill);
@@ -138,6 +364,7 @@ body {
   gap: 6px;
   font-weight: 800;
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .stat.hearts {
@@ -184,6 +411,7 @@ main {
   flex: 1;
   width: 100%;
   max-width: 620px;
+  min-width: 0;
   margin: 0 auto;
   padding: 12px var(--pad) 180px;
 }
@@ -276,6 +504,7 @@ h1.q {
   line-height: 1.6;
   margin-bottom: var(--pad);
   overflow-x: auto;
+  max-width: 100%;
   border-bottom: var(--lift) solid #111827;
 }
 
@@ -626,6 +855,8 @@ h1.q {
 }
 
 .bubble {
+  flex: 1;
+  min-width: 0;
   font-weight: 700;
   font-size: 15px;
   line-height: 1.5;
@@ -730,6 +961,11 @@ h1.q {
     padding-bottom: 200px;
   }
 }
+
+body.reference main {
+  padding-bottom: 48px;
+}
+
 </style>
 </head>
 <body>
@@ -1043,187 +1279,9 @@ h1.q {
 })(typeof window !== "undefined" ? window : globalThis);
 </script>
 <script>
-// Stack, heap, and who deletes
-// Design system: see duo.css, duo-sound.js and duo-icons.js. Icons are inline
-// SVG, never emoji. Keep the contract markers below intact.
-const LESSON = {
-  title: "Stack, heap, and who deletes",
-  next: "../lessons/0002-pointers-and-dereference.html",
-  nextLabel: "Next: pointers and dereference",
-  reference: "../reference/cpp-memory-cheatsheet.html",
-  referenceLabel: "Memory cheatsheet",
-  source: {"label": "cppreference: new and delete operators", "url": "https://en.cppreference.com/w/cpp/language/new"}
-};
-
-const lesson = [
-  {
-    "id": "intro",
-    "type": "intro",
-    "eyebrow": "Intro",
-    "title": "Stack is automatic. Heap is manual.",
-    "text": "A local variable lives on the stack and dies when the function returns. Heap memory from new lives until you hand it back with delete. That freedom is exactly why leaks and dangling pointers exist.",
-    "code": "void f() {\n  int x = 5;           // stack, cleaned up for you\n  int* p = new int(5); // heap, you own it\n  delete p;            // give it back\n}",
-    "cta": "Start"
-  },
-  {
-    "id": "q1",
-    "type": "pick",
-    "eyebrow": "Question 1 of 6",
-    "title": "Where does score live, and who frees it?",
-    "code": "void play() {\n  int score = 100;\n}",
-    "choices": [
-      {
-        "t": "Stack, freed when play() returns",
-        "ok": true
-      },
-      {
-        "t": "Heap, freed when play() returns",
-        "ok": false
-      },
-      {
-        "t": "Heap, freed after the delete",
-        "ok": false
-      },
-      {
-        "t": "Stack, freed after the delete",
-        "ok": false
-      }
-    ],
-    "why": "A plain local is a stack slot. The compiler reclaims it on return. There is no new, so there is no heap and nothing to delete."
-  },
-  {
-    "id": "q2",
-    "type": "pick",
-    "eyebrow": "Question 2 of 6",
-    "title": "What does that new expression return?",
-    "code": "int* p = new int(42);",
-    "choices": [
-      {
-        "t": "One int on the heap, its address",
-        "ok": true
-      },
-      {
-        "t": "One int on the stack, its address",
-        "ok": false
-      },
-      {
-        "t": "Forty-two ints, the first address",
-        "ok": false
-      },
-      {
-        "t": "One int on the heap, by value",
-        "ok": false
-      }
-    ],
-    "why": "new int(42) asks the heap for room for a single int holding 42 and returns that address. p is a stack variable storing the address."
-  },
-  {
-    "id": "q3",
-    "type": "mem",
-    "eyebrow": "Question 3 of 6",
-    "title": "After this runs, what does p point at?",
-    "code": "int* p = new int(7);\n// the stack holds p, the heap holds 7",
-    "stack": [
-      "p: 0x7F3A"
-    ],
-    "heap": [
-      "0x7F3A: 7"
-    ],
-    "choices": [
-      {
-        "t": "The heap cell holding the 7",
-        "ok": true
-      },
-      {
-        "t": "The stack slot holding p itself",
-        "ok": false
-      },
-      {
-        "t": "Both slots, they are the same",
-        "ok": false
-      }
-    ],
-    "why": "p lives on the stack. The 7 lives on the heap. p holds the address of that heap cell. Reading it with *p follows the address to the value."
-  },
-  {
-    "id": "q4",
-    "type": "pick",
-    "eyebrow": "Question 4 of 6",
-    "title": "Which one is the real bug?",
-    "code": "void spawn() {\n  int* hp = new int(100);\n  *hp = *hp + 50;\n}",
-    "choices": [
-      {
-        "t": "Missing delete leaks one int",
-        "ok": true
-      },
-      {
-        "t": "The deref corrupts the stack",
-        "ok": false
-      },
-      {
-        "t": "Heap frees itself on return",
-        "ok": false
-      },
-      {
-        "t": "hp must be declared int*",
-        "ok": false
-      }
-    ],
-    "why": "Returning without delete orphans the heap cell. Call spawn a thousand times and you have leaked a thousand ints. Fix it with delete hp before the function returns."
-  },
-  {
-    "id": "q5",
-    "type": "pick",
-    "eyebrow": "Question 5 of 6",
-    "title": "Which line writes 20 into the heap cell?",
-    "code": "int* p = new int(10);\n// which assignment touches the heap?",
-    "choices": [
-      {
-        "t": "*p = 20, p keeps the address",
-        "ok": true
-      },
-      {
-        "t": "p = 20, deref holds address",
-        "ok": false
-      },
-      {
-        "t": "p is address, *p is value",
-        "ok": false
-      },
-      {
-        "t": "Both write to the stack slot",
-        "ok": false
-      }
-    ],
-    "why": "p is the address. *p follows that address and writes the heap cell. Assigning to p itself would reseat the pointer somewhere else instead of changing the value."
-  },
-  {
-    "id": "q6",
-    "type": "pick",
-    "eyebrow": "Question 6 of 6",
-    "title": "Why is this last line a bug?",
-    "code": "int* p = new int(9);\ndelete p;\n*p = 10;   // p still holds the address",
-    "choices": [
-      {
-        "t": "Use after free, the cell is gone",
-        "ok": true
-      },
-      {
-        "t": "Safe, delete just clears value",
-        "ok": false
-      },
-      {
-        "t": "Double free, delete ran twice",
-        "ok": false
-      },
-      {
-        "t": "Safe, p is null afterwards",
-        "ok": false
-      }
-    ],
-    "why": "delete hands the cell back to the allocator but does not touch p, so p still holds the old address. Writing through it is use-after-free, and the result is undefined. Assign p = nullptr right after delete so the mistake fails loudly instead."
-  }
-];
+const LESSON = {{LESSON_PACK}};
+const lesson = LESSON.screens;
+document.title = LESSON.title;
 
 let i = 0, xp = 0, hearts = 3, selected = null, built = [], mistakes = [], firstTry = true;
 
@@ -1273,6 +1331,15 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function codeBlock(code, hl) {
+  if (!code) return "";
+  var body = String(code).split("\n").map(function (line, n) {
+    var text = esc(line);
+    return hl && n + 1 === +hl ? '<span class="hl">' + text + "</span>" : text;
+  }).join("\n");
+  return '<div class="code"><pre>' + body + "</pre></div>";
+}
+
 function render() {
   renderHearts();
   sheet.classList.remove("show");
@@ -1288,7 +1355,7 @@ function render() {
     app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
       '<div class="mascot-row">' + owlSVG() + '<div class="bubble">' + esc(q.text) + '</div></div>' +
-      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      codeBlock(q.code, q.hl) +
       '<div class="sub">One question per screen. Three hearts. Press 1-4 to answer, Enter to check.</div>';
     skipBtn.style.display = "none";
     checkBtn.disabled = false;
@@ -1299,7 +1366,7 @@ function render() {
   if (q.type === "mem") {
     app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
-      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      codeBlock(q.code, q.hl) +
       '<div class="mem">' +
         '<div class="mem-box"><h3>Stack</h3>' +
           q.stack.map(function (s) { return '<div class="mem-cell live">' + esc(s) + '</div>'; }).join("") +
@@ -1308,7 +1375,7 @@ function render() {
           q.heap.map(function (s) { return '<div class="mem-cell heap-cell">' + esc(s) + '</div>'; }).join("") +
         '</div>' +
       '</div>' +
-      '<div class="sub">The pointer sits on the stack. Its value is the address of the heap cell.</div>' +
+      (q.teach ? '<div class="sub">' + esc(q.teach) + '</div>' : '') +
       '<div class="choices">' + q.choices.map(function (c, n) { return choiceHtml(c, n); }).join("") + '</div>';
     bindPick();
     return;
@@ -1317,7 +1384,7 @@ function render() {
   if (q.type === "build") {
     app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
-      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      codeBlock(q.code, q.hl) +
       '<div class="token-bank answer-line" id="ans"></div>' +
       '<div class="token-bank" id="bank">' +
         q.tokens.map(function (t, n) {
@@ -1339,7 +1406,7 @@ function render() {
       built = [];
       document.querySelectorAll("#bank .token").forEach(function (x) { x.classList.remove("picked"); });
       renderBuilt();
-      sound("wrong");
+      sound("select");
     };
     function renderBuilt() {
       ans.innerHTML = built.map(function (t) { return '<span class="token">' + esc(t) + '</span>'; }).join("");
@@ -1351,7 +1418,7 @@ function render() {
   app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
     '<h1 class="q">' + esc(q.title) + '</h1>' +
     (q.teach ? '<div class="prose"><p>' + esc(q.teach) + '</p></div>' : "") +
-    (q.code ? '<div class="code"><pre>' + esc(q.code) + '</pre></div>' : "") +
+    codeBlock(q.code, q.hl) +
     '<div class="choices">' + q.choices.map(function (c, n) { return choiceHtml(c, n); }).join("") + '</div>';
   bindPick();
 }
@@ -1509,3 +1576,4 @@ render();
 </script>
 </body>
 </html>
+'''
