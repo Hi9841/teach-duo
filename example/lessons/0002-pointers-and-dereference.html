@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pointers and dereference</title>
+<style>
+/* Duo design system
+   The canonical stylesheet for every lesson and reference document in a
+   teach-duo workspace. Tokens are fixed. Never improvise them per topic.
+   Inline this file into a standalone lesson, or link it as a shared
+   stylesheet once the workspace has more than one lesson. */
+
+:root {
+  /* color */
+  --green: #58cc02;
+  --green-shadow: #58a700;
+  --green-light: #d7ffb8;
+  --blue: #1cb0f6;
+  --blue-shadow: #1899d6;
+  --blue-light: #ddf4ff;
+  --red: #ff4b4b;
+  --red-shadow: #d33131;
+  --red-light: #ffdfe0;
+  --yellow: #ffc800;
+  --yellow-shadow: #cc9f00;
+  --gray-border: #e5e5e5;
+  --gray-bg: #f7f7f7;
+  --text: #3c3c3c;
+  --muted: #777777;
+
+  /* radius */
+  --radius: 16px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* shadow: flat bottom border, no blur */
+  --lift: 4px;
+
+  /* space */
+  --gap: 12px;
+  --pad: 16px;
+
+  /* type */
+  --font: "Nunito", "Segoe UI Rounded", ui-rounded, system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  font-weight: 700;
+  color: var(--text);
+  background: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* top bar */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--pad);
+  padding: var(--pad) var(--pad);
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* icons
+   Every interface glyph is inline SVG, never emoji. Emoji render
+   differently per platform and cannot take the design system's colour,
+   which is what breaks on the yellow XP pill. */
+
+.icon,
+.icon-slot .icon {
+  width: 1em;
+  height: 1em;
+  display: block;
+  flex-shrink: 0;
+}
+
+.x-btn {
+  font-size: 22px;
+  color: #afafaf;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.x-btn:hover {
+  color: var(--muted);
+}
+
+.x-btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.x-btn[aria-pressed="true"] {
+  color: var(--muted);
+}
+
+.progress-track {
+  flex: 1;
+  height: 16px;
+  background: var(--gray-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--green);
+  border-radius: var(--radius-pill);
+  transition: width 0.4s ease;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.stat.hearts {
+  gap: 4px;
+}
+
+.heart {
+  color: var(--red);
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.heart .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* A spent heart becomes a hollow outline, which reads as spent without
+   needing a second asset. */
+.heart.lost {
+  color: var(--gray-border);
+}
+
+.heart.lost .icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.xp {
+  color: var(--muted);
+  gap: 5px;
+}
+
+.xp .icon {
+  color: var(--yellow-shadow);
+}
+
+/* lesson body */
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 12px var(--pad) 180px;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 1px;
+  font-size: 13px;
+  text-transform: uppercase;
+  margin: 10px 0 8px;
+}
+
+h1.q {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 800;
+  margin-bottom: var(--pad);
+}
+
+.sub {
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+.sub code,
+.question-body code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--gray-bg);
+  border-radius: 6px;
+  padding: 1px 5px;
+}
+
+/* prose sections inside a lesson */
+
+.prose h2 {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 28px 0 10px;
+}
+
+.prose h3 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 20px 0 8px;
+}
+
+.prose p,
+.prose li {
+  font-weight: 600;
+  line-height: 1.65;
+  font-size: 16px;
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 22px;
+  margin: 10px 0;
+}
+
+.prose li {
+  margin-bottom: 6px;
+}
+
+.prose a {
+  color: var(--blue);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose cite {
+  font-style: normal;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* code */
+
+.code {
+  background: #1f2937;
+  color: #e5e7eb;
+  border-radius: var(--radius);
+  padding: var(--pad);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: var(--pad);
+  overflow-x: auto;
+  border-bottom: var(--lift) solid #111827;
+}
+
+.code pre {
+  font: inherit;
+}
+
+.code .hl {
+  background: rgba(255, 75, 75, 0.35);
+  border-radius: 6px;
+  padding: 0 4px;
+}
+
+.code .cm {
+  color: #9ca3af;
+}
+
+/* answer options */
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin-top: 8px;
+}
+
+.choice {
+  border: 2px solid var(--gray-border);
+  border-radius: var(--radius);
+  padding: 14px var(--pad);
+  font-weight: 700;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  gap: var(--gap);
+  align-items: center;
+  background: #fff;
+  border-bottom-width: var(--lift);
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.choice:hover {
+  background: var(--gray-bg);
+}
+
+.choice:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.choice.selected {
+  border-color: var(--blue);
+  background: var(--blue-light);
+}
+
+.choice.correct {
+  border-color: var(--green);
+  background: var(--green-light);
+}
+
+.choice.wrong {
+  border-color: var(--red);
+  background: var(--red-light);
+}
+
+.choice .key {
+  min-width: 28px;
+  height: 28px;
+  border: 2px solid var(--gray-border);
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.choice.selected .key {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* build question: token bank */
+
+.token-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: var(--gap) 0;
+  min-height: 60px;
+  padding: var(--pad);
+  border: 2px dashed var(--gray-border);
+  border-radius: var(--radius);
+  align-items: center;
+}
+
+.token-bank.answer-line {
+  border-style: solid;
+  border-color: var(--blue);
+  background: var(--blue-light);
+  min-height: 52px;
+}
+
+.token {
+  border: 2px solid var(--gray-border);
+  border-bottom-width: var(--lift);
+  border-radius: 12px;
+  padding: 8px var(--pad);
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  cursor: pointer;
+  background: #fff;
+}
+
+.token:hover {
+  background: var(--gray-bg);
+}
+
+.token:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.token.picked {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* memory diagram */
+
+.mem {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  margin: 0 0 var(--pad);
+}
+
+.mem-box {
+  border: 2px solid var(--gray-border);
+  border-radius: var(--radius);
+  padding: var(--pad);
+  border-bottom-width: var(--lift);
+}
+
+.mem-box h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.mem-cell {
+  background: var(--gray-bg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  margin-bottom: 6px;
+  border: 2px solid transparent;
+}
+
+.mem-cell:last-child {
+  margin-bottom: 0;
+}
+
+.mem-cell.live {
+  background: var(--green-light);
+  border-color: var(--green);
+}
+
+.mem-cell.heap-cell {
+  background: var(--blue-light);
+  border-color: var(--blue);
+}
+
+/* footer and buttons */
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 2px solid var(--gray-border);
+  padding: var(--pad);
+}
+
+.footer-inner {
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  gap: var(--gap);
+}
+
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: #fff;
+  background: var(--green);
+  border-bottom: var(--lift) solid var(--green-shadow);
+}
+
+.btn:hover {
+  filter: brightness(1.04);
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.btn:disabled {
+  background: var(--gray-border);
+  border-bottom-color: #d0d0d0;
+  color: #afafaf;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: #fff;
+  color: var(--blue);
+  border: 2px solid var(--gray-border);
+  border-bottom-width: var(--lift);
+}
+
+.btn.danger {
+  background: var(--red);
+  border-bottom-color: var(--red-shadow);
+}
+
+/* feedback sheet */
+
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--pad);
+  border-top: 2px solid var(--gray-border);
+  display: none;
+  z-index: 10;
+}
+
+.sheet.show {
+  display: block;
+  animation: sheet-up 0.2s ease;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet.show {
+    animation: none;
+  }
+  .progress-fill {
+    transition: none;
+  }
+}
+
+.sheet.good {
+  background: var(--green-light);
+}
+
+.sheet.bad {
+  background: var(--red-light);
+}
+
+.sheet-inner {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.sheet-title {
+  font-weight: 800;
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+.sheet.good .sheet-title {
+  color: var(--green-shadow);
+}
+
+.sheet.bad .sheet-title {
+  color: var(--red-shadow);
+}
+
+.sheet-body {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.sheet-body code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+/* mascot */
+
+.mascot-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: #fff;
+  border: 2px solid var(--gray-border);
+  border-bottom-width: var(--lift);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: var(--pad);
+}
+
+.owl {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.bubble {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* final screen */
+
+.end {
+  text-align: center;
+  padding-top: 20px;
+}
+
+.trophy {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.trophy .icon {
+  width: 76px;
+  height: 76px;
+  color: var(--yellow-shadow);
+  stroke-width: 1.6;
+}
+
+.xp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--yellow);
+  border-bottom: var(--lift) solid var(--yellow-shadow);
+  border-radius: var(--radius-pill);
+  padding: 8px 18px;
+  font-weight: 800;
+  margin: var(--gap) 0;
+  color: #6b5200;
+}
+
+.xp-pill .icon {
+  width: 18px;
+  height: 18px;
+  color: #6b5200;
+}
+
+.end-links {
+  list-style: none;
+  padding: 0;
+  margin: var(--gap) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.end-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  border: 2px solid var(--gray-border);
+  border-bottom-width: var(--lift);
+  border-radius: var(--radius);
+  padding: 12px var(--pad);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.end-links a:hover {
+  background: var(--gray-bg);
+}
+
+.end-links .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.mistakes {
+  text-align: left;
+  margin: var(--pad) 0;
+}
+
+.mistakes li {
+  list-style: none;
+  border: 2px solid var(--gray-border);
+  border-radius: 12px;
+  padding: 10px var(--pad);
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* narrow layout */
+
+@media (max-width: 480px) {
+  h1.q {
+    font-size: 19px;
+  }
+  .mem {
+    grid-template-columns: 1fr;
+  }
+  main {
+    padding-bottom: 200px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="x-btn" id="restartBtn" aria-label="Restart lesson" data-icon="close"></button>
+  <button class="x-btn" id="soundBtn" aria-label="Mute sound" data-icon="volumeOn"></button>
+  <div class="progress-track" role="progressbar" aria-label="Lesson progress"><div class="progress-fill" id="progress"></div></div>
+  <div class="stat hearts">
+    <span class="heart" id="h1" data-icon="heart"></span>
+    <span class="heart" id="h2" data-icon="heart"></span>
+    <span class="heart" id="h3" data-icon="heart"></span>
+  </div>
+  <div class="stat xp"><span class="icon-slot" data-icon="zap"></span><span id="xp">0</span></div>
+</div>
+<main id="app"></main>
+<div class="footer" id="footer">
+  <div class="footer-inner">
+    <button class="btn secondary" id="skipBtn">Skip</button>
+    <button class="btn" id="checkBtn" disabled>Check</button>
+  </div>
+</div>
+<div class="sheet" id="sheet" role="status" aria-live="polite"><div class="sheet-inner">
+  <div class="sheet-title" id="sheetTitle"></div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="footer-inner"><button class="btn" id="nextBtn">Continue</button></div>
+</div></div>
+
+<script>
+/* Duo sound engine
+   The canonical feedback sounds for every lesson in a teach-duo workspace.
+
+   Sounds are synthesised with the Web Audio API rather than shipped as audio
+   files. That keeps a lesson a single self-contained HTML file with no binary
+   assets, no CDN, and nothing to load over the network.
+
+   Browsers refuse to start audio before a user gesture, so the context is
+   created on the first call and resumed if it starts suspended. Every method
+   is safe to call before that first gesture, and safe to call in an
+   environment with no audio support at all.
+*/
+(function (global) {
+  "use strict";
+
+  var STORAGE_KEY = "teach-duo:muted";
+
+  function supported() {
+    return typeof global.AudioContext === "function" ||
+           typeof global.webkitAudioContext === "function";
+  }
+
+  function readMuted() {
+    try {
+      return global.localStorage.getItem(STORAGE_KEY) === "1";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function writeMuted(value) {
+    try {
+      global.localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+    } catch (error) {
+      /* storage unavailable, stay muted for this page only */
+    }
+  }
+
+  var context = null;
+  var master = null;
+
+  function ensureContext() {
+    if (!supported()) return null;
+    if (!context) {
+      var Ctor = global.AudioContext || global.webkitAudioContext;
+      try {
+        context = new Ctor();
+      } catch (error) {
+        return null;
+      }
+      master = context.createGain();
+      master.gain.value = 0.9;
+      master.connect(context.destination);
+    }
+    if (context.state === "suspended" && context.resume) {
+      context.resume();
+    }
+    return context;
+  }
+
+  /* One shaped tone. `when` is seconds from now, `dur` is seconds. */
+  function tone(when, freq, dur, type, peak) {
+    var ctx = context;
+    var start = ctx.currentTime + when;
+    var stop = start + dur;
+
+    var osc = ctx.createOscillator();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, start);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peak, start + dur * 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.0001, stop);
+
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(start);
+    osc.stop(stop + 0.02);
+  }
+
+  /* A short pitch slide, used for the falling "wrong" tone. */
+  function slide(when, from, to, dur, type, peak) {
+    var ctx = context;
+    var start = ctx.currentTime + when;
+    var stop = start + dur;
+
+    var osc = ctx.createOscillator();
+    osc.type = type || "triangle";
+    osc.frequency.setValueAtTime(from, start);
+    osc.frequency.exponentialRampToValueAtTime(to, stop);
+
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(peak, start + dur * 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.0001, stop);
+
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(start);
+    osc.stop(stop + 0.02);
+  }
+
+  var muted = readMuted();
+
+  var sounds = {
+    /* A soft tick when an answer is selected. */
+    select: function () {
+      tone(0, 880, 0.045, "sine", 0.05);
+    },
+
+    /* Bright and rising: the answer was right. */
+    correct: function () {
+      tone(0, 659.25, 0.12, "sine", 0.16);   // E5
+      tone(0.09, 987.77, 0.20, "sine", 0.16); // B5
+    },
+
+    /* Low and falling: the answer was wrong. */
+    wrong: function () {
+      slide(0, 320, 180, 0.22, "square", 0.09);
+      tone(0.16, 165, 0.24, "triangle", 0.10);
+    },
+
+    /* One heart gone. */
+    heartLost: function () {
+      slide(0, 440, 220, 0.28, "triangle", 0.10);
+    },
+
+    /* XP counter moving. */
+    xp: function () {
+      tone(0, 1046.5, 0.07, "sine", 0.09);   // C6
+      tone(0.06, 1396.9, 0.11, "sine", 0.07); // F6
+    },
+
+    /* Lesson finished. */
+    complete: function () {
+      tone(0.00, 523.25, 0.14, "triangle", 0.14); // C5
+      tone(0.11, 659.25, 0.14, "triangle", 0.14); // E5
+      tone(0.22, 783.99, 0.14, "triangle", 0.14); // G5
+      tone(0.33, 1046.5, 0.34, "triangle", 0.16); // C6, held
+    },
+
+    /* Out of hearts. */
+    fail: function () {
+      slide(0, 392, 147, 0.42, "sawtooth", 0.10);
+      tone(0.34, 110, 0.30, "sawtooth", 0.09);
+    }
+  };
+
+  global.DuoSound = {
+    /* Play a named sound. Unknown names and muted state are no-ops. */
+    play: function (name) {
+      if (muted) return false;
+      var sound = sounds[name];
+      if (!sound) return false;
+      if (!ensureContext()) return false;
+      try {
+        sound();
+      } catch (error) {
+        return false;
+      }
+      return true;
+    },
+
+    isMuted: function () {
+      return muted;
+    },
+
+    setMuted: function (value) {
+      muted = !!value;
+      writeMuted(muted);
+      return muted;
+    },
+
+    toggle: function () {
+      return global.DuoSound.setMuted(!muted);
+    },
+
+    /* Sound effects for a learner with reduced-motion or audio sensitivity. */
+    isSupported: supported,
+
+    available: Object.keys(sounds)
+  };
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+/* Duo icon set
+   The canonical interface icons for every lesson in a teach-duo workspace.
+
+   These are inline SVG, never emoji. Emoji render differently on every
+   platform, fall back to monochrome or to a mismatched colour on coloured
+   surfaces, and cannot be recoloured by the design system. Inline SVG uses
+   currentColor, so the tokens in duo.css decide how each icon looks.
+
+   Shared geometry: 24x24 viewBox, 2px stroke, round caps and joins, so every
+   icon carries the same optical weight. A filled icon sets fill on the path
+   and CSS can override it, which is how a spent heart becomes an outline.
+*/
+(function (global) {
+  "use strict";
+
+  function svg(body, extra) {
+    return (
+      '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round"' + (extra || "") + ">" + body + "</svg>"
+    );
+  }
+
+  var ICONS = {
+    /* Restart, top bar left. */
+    close: svg('<path d="M6 6 L18 18"/><path d="M18 6 L6 18"/>'),
+
+    /* A heart. Filled while alive; CSS drops the fill when it is lost. */
+    heart: svg(
+      '<path fill="currentColor" stroke="none" ' +
+      'd="M12 20.6 C12 20.6 3.2 15.1 3.2 9.3 A4.75 4.75 0 0 1 12 6.7 ' +
+      'A4.75 4.75 0 0 1 20.8 9.3 C20.8 15.1 12 20.6 12 20.6 Z"/>'
+    ),
+
+    /* XP. */
+    zap: svg(
+      '<path fill="currentColor" stroke="none" ' +
+      'd="M13.4 2 L4.6 13.6 H10.4 L9.6 22 L19.4 10.2 H13.4 Z"/>'
+    ),
+
+    /* Lesson complete. */
+    trophy: svg(
+      '<path d="M7 3 H17 V9.5 A5 5 0 0 1 7 9.5 Z" fill="currentColor" stroke="none"/>' +
+      '<path d="M7 4.5 H4.4 V6.8 A3.4 3.4 0 0 0 7.3 10.2"/>' +
+      '<path d="M17 4.5 H19.6 V6.8 A3.4 3.4 0 0 1 16.7 10.2"/>' +
+      '<path d="M12 14.5 V18"/>' +
+      '<path d="M8.6 21 H15.4 L14 18 H10 Z" fill="currentColor" stroke="none"/>'
+    ),
+
+    /* Sound on. */
+    volumeOn: svg(
+      '<path d="M4 9.4 H7 L11.4 5.8 V18.2 L7 14.6 H4 Z" fill="currentColor" stroke="none"/>' +
+      '<path d="M15 9.6 A3.4 3.4 0 0 1 15 14.4"/>' +
+      '<path d="M17.6 7 A7 7 0 0 1 17.6 17"/>'
+    ),
+
+    /* Sound muted. */
+    volumeOff: svg(
+      '<path d="M4 9.4 H7 L11.4 5.8 V18.2 L7 14.6 H4 Z" fill="currentColor" stroke="none"/>' +
+      '<path d="M15.6 9.8 L20.4 14.4"/>' +
+      '<path d="M20.4 9.8 L15.6 14.4"/>'
+    ),
+
+    /* Link out, used by the primary source line. */
+    external: svg(
+      '<path d="M14 4 H20 V10"/>' +
+      '<path d="M20 4 L11 13"/>' +
+      '<path d="M18 14.5 V19 A1.5 1.5 0 0 1 16.5 20.5 H5 A1.5 1.5 0 0 1 3.5 19 V7.5 ' +
+      'A1.5 1.5 0 0 1 5 6 H9.5"/>'
+    ),
+
+    /* Next lesson or reference link. */
+    arrowRight: svg('<path d="M5 12 H19"/><path d="M13 6 L19 12 L13 18"/>')
+  };
+
+  /* Fill every [data-icon] slot on the page from the set above, so markup
+     declares which icon it wants by name and never hard-codes a glyph. */
+  function hydrate(root) {
+    var scope = root || global.document;
+    if (!scope || !scope.querySelectorAll) return;
+    scope.querySelectorAll("[data-icon]").forEach(function (slot) {
+      var name = slot.getAttribute("data-icon");
+      if (ICONS[name] && !slot.firstChild) {
+        slot.innerHTML = ICONS[name];
+      }
+    });
+  }
+
+  global.DuoIcons = {
+    icons: ICONS,
+    get: function (name) {
+      return ICONS[name] || "";
+    },
+    hydrate: hydrate,
+    names: Object.keys(ICONS)
+  };
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+// Pointers and dereference
+// Design system: see duo.css, duo-sound.js and duo-icons.js. Icons are inline
+// SVG, never emoji. Keep the contract markers below intact.
+const LESSON = {
+  title: "Pointers and dereference",
+  next: "",
+  nextLabel: "",
+  reference: "../reference/cpp-memory-cheatsheet.html",
+  referenceLabel: "Memory cheatsheet",
+  source: {"label": "cppreference: pointer declaration", "url": "https://en.cppreference.com/w/cpp/language/pointer"}
+};
+
+const lesson = [
+  {
+    "id": "intro",
+    "type": "intro",
+    "eyebrow": "Intro",
+    "title": "A pointer is an address, not a box.",
+    "text": "p holds the address of some other int. *p follows that address to reach the int itself. Writing to p reseats the pointer, writing to *p changes the value it points at.",
+    "code": "int value = 5;\nint* p = &value;\n\n*p = 10;  // value is now 10\np = nullptr; // reseats, value untouched",
+    "cta": "Start"
+  },
+  {
+    "id": "q1",
+    "type": "pick",
+    "eyebrow": "Question 1 of 6",
+    "title": "What does &value give you here?",
+    "code": "int value = 5;\nint* p = &value;",
+    "choices": [
+      {
+        "t": "The address of the int value",
+        "ok": true
+      },
+      {
+        "t": "A second copy of the value",
+        "ok": false
+      },
+      {
+        "t": "A pointer stored on the heap",
+        "ok": false
+      },
+      {
+        "t": "The size of the int object",
+        "ok": false
+      }
+    ],
+    "why": "&value is the address-of operator. It hands back the address of the existing int, and p stores that address. No new memory was allocated."
+  },
+  {
+    "id": "q2",
+    "type": "pick",
+    "eyebrow": "Question 2 of 6",
+    "title": "After that, what is value?",
+    "code": "int value = 5;\nint* p = &value;\n*p = 10;",
+    "choices": [
+      {
+        "t": "10, because p pointed at it",
+        "ok": true
+      },
+      {
+        "t": "5, because only p changed",
+        "ok": false
+      },
+      {
+        "t": "0, because p was reassigned",
+        "ok": false
+      },
+      {
+        "t": "Unchanged, it is on the stack",
+        "ok": false
+      }
+    ],
+    "why": "*p dereferences p, so the assignment writes straight through the address into the original int. value is 10. p itself never changed."
+  },
+  {
+    "id": "q3",
+    "type": "pick",
+    "eyebrow": "Question 3 of 6",
+    "title": "What does this line change?",
+    "code": "int value = 5;\nint* p = &value;\np = nullptr;",
+    "choices": [
+      {
+        "t": "Only p, value stays at five",
+        "ok": true
+      },
+      {
+        "t": "Both p and value become null",
+        "ok": false
+      },
+      {
+        "t": "Only value, p stays pointing",
+        "ok": false
+      },
+      {
+        "t": "Nothing, p is a reference",
+        "ok": false
+      }
+    ],
+    "why": "Assigning to p reseats the pointer. value is a separate object and is untouched. Note this differs from *p = ..., which writes through the pointer."
+  },
+  {
+    "id": "q4",
+    "type": "pick",
+    "eyebrow": "Question 4 of 6",
+    "title": "Which pointer would crash if it were used?",
+    "code": "int* a = nullptr;\nint* b = new int(4);",
+    "choices": [
+      {
+        "t": "a, because it points nowhere",
+        "ok": true
+      },
+      {
+        "t": "b, because it points at heap",
+        "ok": false
+      },
+      {
+        "t": "Both, one has no value",
+        "ok": false
+      },
+      {
+        "t": "Neither, both are valid",
+        "ok": false
+      }
+    ],
+    "why": "Dereferencing nullptr is undefined behavior and usually faults. b points at a real heap cell and is fine to read, but it must be deleted exactly once."
+  },
+  {
+    "id": "q5",
+    "type": "build",
+    "eyebrow": "Question 5 of 6 · Build the fix",
+    "title": "Build the line that frees this heap cell safely.",
+    "code": "void heal() {\n  int* hp = new int(5);\n  // ___\n}",
+    "tokens": [
+      "delete",
+      "hp",
+      ";",
+      "int",
+      "5"
+    ],
+    "answer": [
+      "delete",
+      "hp",
+      ";"
+    ],
+    "why": "Every new needs exactly one delete against the same address. One delete here plugs the leak, and a second delete on the same pointer would be a double free."
+  },
+  {
+    "id": "q6",
+    "type": "pick",
+    "eyebrow": "Question 6 of 6",
+    "title": "Why null the pointer right after delete?",
+    "code": "int* p = new int(3);\ndelete p;\np = nullptr;",
+    "choices": [
+      {
+        "t": "So a later use fails loudly",
+        "ok": true
+      },
+      {
+        "t": "So the memory comes back twice",
+        "ok": false
+      },
+      {
+        "t": "Because delete cannot run on null",
+        "ok": false
+      },
+      {
+        "t": "So the pointer moves to the stack",
+        "ok": false
+      }
+    ],
+    "why": "delete returns the cell to the allocator but leaves p holding the old address. Setting p = nullptr means a later dereference fails immediately and obviously, instead of quietly writing into memory someone else now owns."
+  }
+];
+
+let i = 0, xp = 0, hearts = 3, selected = null, built = [], mistakes = [], firstTry = true;
+
+const app = document.getElementById("app");
+const progress = document.getElementById("progress");
+const checkBtn = document.getElementById("checkBtn");
+const skipBtn = document.getElementById("skipBtn");
+const sheet = document.getElementById("sheet");
+const nextBtn = document.getElementById("nextBtn");
+const soundBtn = document.getElementById("soundBtn");
+
+function sound(name) {
+  if (window.DuoSound) window.DuoSound.play(name);
+}
+
+function renderSound() {
+  if (!soundBtn) return;
+  var muted = window.DuoSound ? window.DuoSound.isMuted() : false;
+  soundBtn.innerHTML = window.DuoIcons ? DuoIcons.get(muted ? "volumeOff" : "volumeOn") : "";
+  soundBtn.setAttribute("aria-label", muted ? "Unmute sound" : "Mute sound");
+  soundBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+}
+
+if (soundBtn) {
+  soundBtn.onclick = function () {
+    if (window.DuoSound) window.DuoSound.toggle();
+    renderSound();
+  };
+  renderSound();
+}
+
+function renderHearts() {
+  for (let n = 1; n <= 3; n++) document.getElementById("h" + n).classList.toggle("lost", n > hearts);
+  document.getElementById("xp").textContent = xp;
+  progress.style.width = Math.round((i / lesson.length) * 100) + "%";
+}
+
+function owlSVG() {
+  return '<svg class="owl" viewBox="0 0 64 64" role="img" aria-label="Mascot">' +
+    '<rect x="4" y="8" width="56" height="48" rx="16" fill="#58CC02"/>' +
+    '<circle cx="24" cy="28" r="10" fill="#fff"/><circle cx="40" cy="28" r="10" fill="#fff"/>' +
+    '<circle cx="24" cy="29" r="4" fill="#3C3C3C"/><circle cx="40" cy="29" r="4" fill="#3C3C3C"/>' +
+    '<rect x="26" y="44" width="12" height="6" rx="3" fill="#FFC800"/></svg>';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function render() {
+  renderHearts();
+  sheet.classList.remove("show");
+  selected = null; built = []; firstTry = true;
+  checkBtn.disabled = true;
+  checkBtn.textContent = "Check";
+  skipBtn.style.display = "";
+  document.getElementById("footer").style.display = "block";
+  const q = lesson[i];
+  if (!q) return renderEnd();
+
+  if (q.type === "intro") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+      '<h1 class="q">' + esc(q.title) + '</h1>' +
+      '<div class="mascot-row">' + owlSVG() + '<div class="bubble">' + esc(q.text) + '</div></div>' +
+      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      '<div class="sub">One question per screen. Three hearts. Press 1-4 to answer, Enter to check.</div>';
+    skipBtn.style.display = "none";
+    checkBtn.disabled = false;
+    checkBtn.textContent = q.cta;
+    return;
+  }
+
+  if (q.type === "mem") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+      '<h1 class="q">' + esc(q.title) + '</h1>' +
+      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      '<div class="mem">' +
+        '<div class="mem-box"><h3>Stack</h3>' +
+          q.stack.map(function (s) { return '<div class="mem-cell live">' + esc(s) + '</div>'; }).join("") +
+        '</div>' +
+        '<div class="mem-box"><h3>Heap</h3>' +
+          q.heap.map(function (s) { return '<div class="mem-cell heap-cell">' + esc(s) + '</div>'; }).join("") +
+        '</div>' +
+      '</div>' +
+      '<div class="sub">The pointer sits on the stack. Its value is the address of the heap cell.</div>' +
+      '<div class="choices">' + q.choices.map(function (c, n) { return choiceHtml(c, n); }).join("") + '</div>';
+    bindPick();
+    return;
+  }
+
+  if (q.type === "build") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+      '<h1 class="q">' + esc(q.title) + '</h1>' +
+      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      '<div class="token-bank answer-line" id="ans"></div>' +
+      '<div class="token-bank" id="bank">' +
+        q.tokens.map(function (t, n) {
+          return '<button class="token" data-t="' + esc(t) + '" data-n="' + n + '">' + esc(t) + '</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="sub">Tap the tokens in order. Tap the answer line to clear it.</div>';
+    const ans = document.getElementById("ans");
+    document.querySelectorAll("#bank .token").forEach(function (b) {
+      b.onclick = function () {
+        built.push(b.dataset.t);
+        b.classList.add("picked");
+        renderBuilt();
+        sound("select");
+      };
+    });
+    ans.onclick = function () {
+      if (!built.length) return;
+      built = [];
+      document.querySelectorAll("#bank .token").forEach(function (x) { x.classList.remove("picked"); });
+      renderBuilt();
+      sound("wrong");
+    };
+    function renderBuilt() {
+      ans.innerHTML = built.map(function (t) { return '<span class="token">' + esc(t) + '</span>'; }).join("");
+      checkBtn.disabled = built.length === 0;
+    }
+    return;
+  }
+
+  app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+    '<h1 class="q">' + esc(q.title) + '</h1>' +
+    (q.teach ? '<div class="prose"><p>' + esc(q.teach) + '</p></div>' : "") +
+    (q.code ? '<div class="code"><pre>' + esc(q.code) + '</pre></div>' : "") +
+    '<div class="choices">' + q.choices.map(function (c, n) { return choiceHtml(c, n); }).join("") + '</div>';
+  bindPick();
+}
+
+function choiceHtml(c, n) {
+  return '<button class="choice" data-n="' + n + '">' +
+    '<span class="key">' + (n + 1) + '</span><span>' + esc(c.t) + '</span></button>';
+}
+
+function bindPick() {
+  document.querySelectorAll(".choice").forEach(function (el) {
+    el.onclick = function () {
+      if (el.classList.contains("selected")) return;
+      document.querySelectorAll(".choice").forEach(function (x) { x.classList.remove("selected"); });
+      el.classList.add("selected");
+      selected = +el.dataset.n;
+      checkBtn.disabled = false;
+      sound("select");
+    };
+  });
+}
+
+document.addEventListener("keydown", function (e) {
+  const q = lesson[i];
+  if (!q) return;
+  if (sheet.classList.contains("show")) {
+    if (e.key === "Enter") next();
+    return;
+  }
+  if (q.choices && ["1", "2", "3", "4"].indexOf(e.key) !== -1) {
+    const el = document.querySelector('.choice[data-n="' + (+e.key - 1) + '"]');
+    if (el) el.click();
+  }
+  if (e.key === "Enter" && !checkBtn.disabled) check();
+});
+
+checkBtn.onclick = check;
+skipBtn.onclick = function () { if (lesson[i] && lesson[i].type !== "intro") { mistakes.push(lesson[i].title); i++; render(); } };
+document.getElementById("restartBtn").onclick = function () { restart(); };
+nextBtn.onclick = next;
+
+function check() {
+  const q = lesson[i];
+  if (q.type === "intro") { i++; render(); return; }
+
+  let correct = false;
+  if (q.type === "build") {
+    correct = JSON.stringify(built) === JSON.stringify(q.answer);
+  } else {
+    correct = !!(q.choices[selected] && q.choices[selected].ok);
+    document.querySelectorAll(".choice").forEach(function (el, n) {
+      if (q.choices[n].ok) el.classList.add("correct");
+      else if (n === selected) el.classList.add("wrong");
+    });
+  }
+
+  const title = document.getElementById("sheetTitle");
+  const body = document.getElementById("sheetBody");
+
+  if (correct) {
+    if (firstTry) xp += 10;
+    title.textContent = q.praise || "Nice!";
+    sheet.className = "sheet show good";
+    nextBtn.style.background = "var(--green)";
+    nextBtn.style.borderBottomColor = "var(--green-shadow)";
+    sound("correct");
+    if (firstTry) window.setTimeout(function () { sound("xp"); }, 120);
+  } else {
+    hearts = Math.max(0, hearts - 1);
+    firstTry = false;
+    mistakes.push(q.title);
+    title.textContent = q.nudge || "Not quite.";
+    sheet.className = "sheet show bad";
+    nextBtn.style.background = "var(--red)";
+    nextBtn.style.borderBottomColor = "var(--red-shadow)";
+    sound("wrong");
+    window.setTimeout(function () { sound("heartLost"); }, 200);
+  }
+
+  body.textContent = q.why;
+  document.getElementById("footer").style.display = "none";
+  sheet.classList.add("show");
+  renderHearts();
+
+  if (!correct && hearts === 0) {
+    body.textContent = q.why + " Out of hearts. Retry the lesson to keep the streak.";
+    nextBtn.textContent = "Retry";
+    nextBtn.onclick = function () {
+      nextBtn.textContent = "Continue";
+      nextBtn.onclick = next;
+      restart();
+    };
+    window.setTimeout(function () { sound("fail"); }, 420);
+  }
+}
+
+function next() {
+  i++;
+  if (i >= lesson.length) renderEnd();
+  else render();
+}
+
+function restart() {
+  i = 0; xp = 0; hearts = 3; mistakes = [];
+  nextBtn.textContent = "Continue";
+  nextBtn.onclick = next;
+  nextBtn.style.background = "";
+  nextBtn.style.borderBottomColor = "";
+  render();
+}
+
+function icon(name) {
+  return window.DuoIcons ? DuoIcons.get(name) : "";
+}
+
+function renderEnd() {
+  document.getElementById("footer").style.display = "none";
+  sheet.classList.remove("show");
+  progress.style.width = "100%";
+  sound("complete");
+  const uniq = Array.from(new Set(mistakes));
+  let links = '<ul class="end-links">';
+  if (LESSON.next) {
+    links += '<li><a href="' + esc(LESSON.next) + '">' + icon("arrowRight") +
+      '<span>' + esc(LESSON.nextLabel) + '</span></a></li>';
+  }
+  if (LESSON.reference) {
+    links += '<li><a href="' + esc(LESSON.reference) + '">' + icon("arrowRight") +
+      '<span>' + esc(LESSON.referenceLabel) + '</span></a></li>';
+  }
+  if (LESSON.source) {
+    links += '<li><a href="' + esc(LESSON.source.url) + '" rel="noopener" target="_blank">' +
+      icon("external") + '<span>Read next: ' + esc(LESSON.source.label) + '</span></a></li>';
+  }
+  links += '</ul>';
+
+  app.innerHTML = '<div class="end">' +
+    '<div class="trophy">' + icon("trophy") + '</div>' +
+    '<div class="eyebrow">Lesson complete</div>' +
+    '<h1 class="q">' + esc(LESSON.title) + '</h1>' +
+    '<div class="xp-pill">' + icon("zap") + '<span>+' + xp + ' XP</span></div>' +
+    links +
+    '<div class="sub">Stuck on something? Ask your agent. It is your teacher.</div>' +
+    (uniq.length
+      ? '<ul class="mistakes">' + uniq.map(function (m) { return '<li>Review: ' + esc(m) + '</li>'; }).join("") + '</ul>'
+      : '<div class="sub">Flawless run. Nothing to review.</div>') +
+    '<div class="footer-inner" style="margin-top:16px">' +
+      '<button class="btn secondary" onclick="restart()">Retry</button>' +
+      '<button class="btn" onclick="restart()">Practice again</button>' +
+    '</div></div>';
+}
+
+if (window.DuoIcons) DuoIcons.hydrate();
+render();
+</script>
+</body>
+</html>

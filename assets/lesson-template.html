@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<style>
+{{DUO_CSS}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="x-btn" id="restartBtn" aria-label="Restart lesson" data-icon="close"></button>
+  <button class="x-btn" id="soundBtn" aria-label="Mute sound" data-icon="volumeOn"></button>
+  <div class="progress-track" role="progressbar" aria-label="Lesson progress"><div class="progress-fill" id="progress"></div></div>
+  <div class="stat hearts">
+    <span class="heart" id="h1" data-icon="heart"></span>
+    <span class="heart" id="h2" data-icon="heart"></span>
+    <span class="heart" id="h3" data-icon="heart"></span>
+  </div>
+  <div class="stat xp"><span class="icon-slot" data-icon="zap"></span><span id="xp">0</span></div>
+</div>
+<main id="app"></main>
+<div class="footer" id="footer">
+  <div class="footer-inner">
+    <button class="btn secondary" id="skipBtn">Skip</button>
+    <button class="btn" id="checkBtn" disabled>Check</button>
+  </div>
+</div>
+<div class="sheet" id="sheet" role="status" aria-live="polite"><div class="sheet-inner">
+  <div class="sheet-title" id="sheetTitle"></div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="footer-inner"><button class="btn" id="nextBtn">Continue</button></div>
+</div></div>
+
+<script>
+{{DUO_SOUND}}
+</script>
+<script>
+{{DUO_ICONS}}
+</script>
+<script>
+// {{TITLE}}
+// Design system: see duo.css, duo-sound.js and duo-icons.js. Icons are inline
+// SVG, never emoji. Keep the contract markers below intact.
+const LESSON = {
+  title: "{{TITLE}}",
+  next: "{{NEXT_HREF}}",
+  nextLabel: "{{NEXT_LABEL}}",
+  reference: "{{REFERENCE_HREF}}",
+  referenceLabel: "{{REFERENCE_LABEL}}",
+  source: {{SOURCE}}
+};
+
+const lesson = {{LESSON_DATA}};
+
+let i = 0, xp = 0, hearts = 3, selected = null, built = [], mistakes = [], firstTry = true;
+
+const app = document.getElementById("app");
+const progress = document.getElementById("progress");
+const checkBtn = document.getElementById("checkBtn");
+const skipBtn = document.getElementById("skipBtn");
+const sheet = document.getElementById("sheet");
+const nextBtn = document.getElementById("nextBtn");
+const soundBtn = document.getElementById("soundBtn");
+
+function sound(name) {
+  if (window.DuoSound) window.DuoSound.play(name);
+}
+
+function renderSound() {
+  if (!soundBtn) return;
+  var muted = window.DuoSound ? window.DuoSound.isMuted() : false;
+  soundBtn.innerHTML = window.DuoIcons ? DuoIcons.get(muted ? "volumeOff" : "volumeOn") : "";
+  soundBtn.setAttribute("aria-label", muted ? "Unmute sound" : "Mute sound");
+  soundBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+}
+
+if (soundBtn) {
+  soundBtn.onclick = function () {
+    if (window.DuoSound) window.DuoSound.toggle();
+    renderSound();
+  };
+  renderSound();
+}
+
+function renderHearts() {
+  for (let n = 1; n <= 3; n++) document.getElementById("h" + n).classList.toggle("lost", n > hearts);
+  document.getElementById("xp").textContent = xp;
+  progress.style.width = Math.round((i / lesson.length) * 100) + "%";
+}
+
+function owlSVG() {
+  return '<svg class="owl" viewBox="0 0 64 64" role="img" aria-label="Mascot">' +
+    '<rect x="4" y="8" width="56" height="48" rx="16" fill="#58CC02"/>' +
+    '<circle cx="24" cy="28" r="10" fill="#fff"/><circle cx="40" cy="28" r="10" fill="#fff"/>' +
+    '<circle cx="24" cy="29" r="4" fill="#3C3C3C"/><circle cx="40" cy="29" r="4" fill="#3C3C3C"/>' +
+    '<rect x="26" y="44" width="12" height="6" rx="3" fill="#FFC800"/></svg>';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function render() {
+  renderHearts();
+  sheet.classList.remove("show");
+  selected = null; built = []; firstTry = true;
+  checkBtn.disabled = true;
+  checkBtn.textContent = "Check";
+  skipBtn.style.display = "";
+  document.getElementById("footer").style.display = "block";
+  const q = lesson[i];
+  if (!q) return renderEnd();
+
+  if (q.type === "intro") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+      '<h1 class="q">' + esc(q.title) + '</h1>' +
+      '<div class="mascot-row">' + owlSVG() + '<div class="bubble">' + esc(q.text) + '</div></div>' +
+      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      '<div class="sub">One question per screen. Three hearts. Press 1-4 to answer, Enter to check.</div>';
+    skipBtn.style.display = "none";
+    checkBtn.disabled = false;
+    checkBtn.textContent = q.cta;
+    return;
+  }
+
+  if (q.type === "mem") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+      '<h1 class="q">' + esc(q.title) + '</h1>' +
+      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      '<div class="mem">' +
+        '<div class="mem-box"><h3>Stack</h3>' +
+          q.stack.map(function (s) { return '<div class="mem-cell live">' + esc(s) + '</div>'; }).join("") +
+        '</div>' +
+        '<div class="mem-box"><h3>Heap</h3>' +
+          q.heap.map(function (s) { return '<div class="mem-cell heap-cell">' + esc(s) + '</div>'; }).join("") +
+        '</div>' +
+      '</div>' +
+      '<div class="sub">The pointer sits on the stack. Its value is the address of the heap cell.</div>' +
+      '<div class="choices">' + q.choices.map(function (c, n) { return choiceHtml(c, n); }).join("") + '</div>';
+    bindPick();
+    return;
+  }
+
+  if (q.type === "build") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+      '<h1 class="q">' + esc(q.title) + '</h1>' +
+      '<div class="code"><pre>' + esc(q.code) + '</pre></div>' +
+      '<div class="token-bank answer-line" id="ans"></div>' +
+      '<div class="token-bank" id="bank">' +
+        q.tokens.map(function (t, n) {
+          return '<button class="token" data-t="' + esc(t) + '" data-n="' + n + '">' + esc(t) + '</button>';
+        }).join("") +
+      '</div>' +
+      '<div class="sub">Tap the tokens in order. Tap the answer line to clear it.</div>';
+    const ans = document.getElementById("ans");
+    document.querySelectorAll("#bank .token").forEach(function (b) {
+      b.onclick = function () {
+        built.push(b.dataset.t);
+        b.classList.add("picked");
+        renderBuilt();
+        sound("select");
+      };
+    });
+    ans.onclick = function () {
+      if (!built.length) return;
+      built = [];
+      document.querySelectorAll("#bank .token").forEach(function (x) { x.classList.remove("picked"); });
+      renderBuilt();
+      sound("wrong");
+    };
+    function renderBuilt() {
+      ans.innerHTML = built.map(function (t) { return '<span class="token">' + esc(t) + '</span>'; }).join("");
+      checkBtn.disabled = built.length === 0;
+    }
+    return;
+  }
+
+  app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+    '<h1 class="q">' + esc(q.title) + '</h1>' +
+    (q.teach ? '<div class="prose"><p>' + esc(q.teach) + '</p></div>' : "") +
+    (q.code ? '<div class="code"><pre>' + esc(q.code) + '</pre></div>' : "") +
+    '<div class="choices">' + q.choices.map(function (c, n) { return choiceHtml(c, n); }).join("") + '</div>';
+  bindPick();
+}
+
+function choiceHtml(c, n) {
+  return '<button class="choice" data-n="' + n + '">' +
+    '<span class="key">' + (n + 1) + '</span><span>' + esc(c.t) + '</span></button>';
+}
+
+function bindPick() {
+  document.querySelectorAll(".choice").forEach(function (el) {
+    el.onclick = function () {
+      if (el.classList.contains("selected")) return;
+      document.querySelectorAll(".choice").forEach(function (x) { x.classList.remove("selected"); });
+      el.classList.add("selected");
+      selected = +el.dataset.n;
+      checkBtn.disabled = false;
+      sound("select");
+    };
+  });
+}
+
+document.addEventListener("keydown", function (e) {
+  const q = lesson[i];
+  if (!q) return;
+  if (sheet.classList.contains("show")) {
+    if (e.key === "Enter") next();
+    return;
+  }
+  if (q.choices && ["1", "2", "3", "4"].indexOf(e.key) !== -1) {
+    const el = document.querySelector('.choice[data-n="' + (+e.key - 1) + '"]');
+    if (el) el.click();
+  }
+  if (e.key === "Enter" && !checkBtn.disabled) check();
+});
+
+checkBtn.onclick = check;
+skipBtn.onclick = function () { if (lesson[i] && lesson[i].type !== "intro") { mistakes.push(lesson[i].title); i++; render(); } };
+document.getElementById("restartBtn").onclick = function () { restart(); };
+nextBtn.onclick = next;
+
+function check() {
+  const q = lesson[i];
+  if (q.type === "intro") { i++; render(); return; }
+
+  let correct = false;
+  if (q.type === "build") {
+    correct = JSON.stringify(built) === JSON.stringify(q.answer);
+  } else {
+    correct = !!(q.choices[selected] && q.choices[selected].ok);
+    document.querySelectorAll(".choice").forEach(function (el, n) {
+      if (q.choices[n].ok) el.classList.add("correct");
+      else if (n === selected) el.classList.add("wrong");
+    });
+  }
+
+  const title = document.getElementById("sheetTitle");
+  const body = document.getElementById("sheetBody");
+
+  if (correct) {
+    if (firstTry) xp += 10;
+    title.textContent = q.praise || "Nice!";
+    sheet.className = "sheet show good";
+    nextBtn.style.background = "var(--green)";
+    nextBtn.style.borderBottomColor = "var(--green-shadow)";
+    sound("correct");
+    if (firstTry) window.setTimeout(function () { sound("xp"); }, 120);
+  } else {
+    hearts = Math.max(0, hearts - 1);
+    firstTry = false;
+    mistakes.push(q.title);
+    title.textContent = q.nudge || "Not quite.";
+    sheet.className = "sheet show bad";
+    nextBtn.style.background = "var(--red)";
+    nextBtn.style.borderBottomColor = "var(--red-shadow)";
+    sound("wrong");
+    window.setTimeout(function () { sound("heartLost"); }, 200);
+  }
+
+  body.textContent = q.why;
+  document.getElementById("footer").style.display = "none";
+  sheet.classList.add("show");
+  renderHearts();
+
+  if (!correct && hearts === 0) {
+    body.textContent = q.why + " Out of hearts. Retry the lesson to keep the streak.";
+    nextBtn.textContent = "Retry";
+    nextBtn.onclick = function () {
+      nextBtn.textContent = "Continue";
+      nextBtn.onclick = next;
+      restart();
+    };
+    window.setTimeout(function () { sound("fail"); }, 420);
+  }
+}
+
+function next() {
+  i++;
+  if (i >= lesson.length) renderEnd();
+  else render();
+}
+
+function restart() {
+  i = 0; xp = 0; hearts = 3; mistakes = [];
+  nextBtn.textContent = "Continue";
+  nextBtn.onclick = next;
+  nextBtn.style.background = "";
+  nextBtn.style.borderBottomColor = "";
+  render();
+}
+
+function icon(name) {
+  return window.DuoIcons ? DuoIcons.get(name) : "";
+}
+
+function renderEnd() {
+  document.getElementById("footer").style.display = "none";
+  sheet.classList.remove("show");
+  progress.style.width = "100%";
+  sound("complete");
+  const uniq = Array.from(new Set(mistakes));
+  let links = '<ul class="end-links">';
+  if (LESSON.next) {
+    links += '<li><a href="' + esc(LESSON.next) + '">' + icon("arrowRight") +
+      '<span>' + esc(LESSON.nextLabel) + '</span></a></li>';
+  }
+  if (LESSON.reference) {
+    links += '<li><a href="' + esc(LESSON.reference) + '">' + icon("arrowRight") +
+      '<span>' + esc(LESSON.referenceLabel) + '</span></a></li>';
+  }
+  if (LESSON.source) {
+    links += '<li><a href="' + esc(LESSON.source.url) + '" rel="noopener" target="_blank">' +
+      icon("external") + '<span>Read next: ' + esc(LESSON.source.label) + '</span></a></li>';
+  }
+  links += '</ul>';
+
+  app.innerHTML = '<div class="end">' +
+    '<div class="trophy">' + icon("trophy") + '</div>' +
+    '<div class="eyebrow">Lesson complete</div>' +
+    '<h1 class="q">' + esc(LESSON.title) + '</h1>' +
+    '<div class="xp-pill">' + icon("zap") + '<span>+' + xp + ' XP</span></div>' +
+    links +
+    '<div class="sub">Stuck on something? Ask your agent. It is your teacher.</div>' +
+    (uniq.length
+      ? '<ul class="mistakes">' + uniq.map(function (m) { return '<li>Review: ' + esc(m) + '</li>'; }).join("") + '</ul>'
+      : '<div class="sub">Flawless run. Nothing to review.</div>') +
+    '<div class="footer-inner" style="margin-top:16px">' +
+      '<button class="btn secondary" onclick="restart()">Retry</button>' +
+      '<button class="btn" onclick="restart()">Practice again</button>' +
+    '</div></div>';
+}
+
+if (window.DuoIcons) DuoIcons.hydrate();
+render();
+</script>
+</body>
+</html>

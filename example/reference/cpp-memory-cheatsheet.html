@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ memory cheatsheet</title>
+<style>
+:root {
+  --green: #58cc02; --green-shadow: #58a700; --green-light: #d7ffb8;
+  --blue: #1cb0f6; --blue-shadow: #1899d6; --blue-light: #ddf4ff;
+  --red: #ff4b4b; --red-shadow: #d33131; --red-light: #ffdfe0;
+  --yellow: #ffc800; --yellow-shadow: #cc9f00;
+  --gray-border: #e5e5e5; --gray-bg: #f7f7f7;
+  --text: #3c3c3c; --muted: #777777;
+  --radius: 16px; --radius-sm: 8px;
+  --font: "Nunito", "Segoe UI Rounded", ui-rounded, system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "SF Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font); font-weight: 700; color: var(--text);
+  background: #fff; min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  border-bottom: var(--radius) solid var(--green);
+  padding: 28px 16px 24px;
+  margin-bottom: 24px;
+}
+header .wrap, main .wrap { max-width: 620px; margin: 0 auto; }
+.eyebrow {
+  color: var(--muted); font-weight: 800; letter-spacing: 1px; font-size: 13px;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+h1 { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 6px; }
+.lede { color: var(--muted); font-size: 15px; }
+main { padding: 0 16px 80px; }
+section { margin-bottom: 32px; }
+h2 {
+  font-size: 19px; font-weight: 800; margin-bottom: 10px;
+  padding-bottom: 8px; border-bottom: 2px solid var(--gray-border);
+}
+h3 { font-size: 16px; font-weight: 800; margin: 18px 0 8px; }
+p, li { font-weight: 600; line-height: 1.65; font-size: 16px; }
+p { margin-bottom: 12px; }
+ul, ol { padding-left: 22px; margin-bottom: 12px; }
+li { margin-bottom: 6px; }
+a { color: var(--blue); font-weight: 800; text-underline-offset: 3px; }
+code {
+  font-family: var(--mono); font-size: 0.9em; background: var(--gray-bg);
+  border-radius: 6px; padding: 2px 6px;
+}
+pre.code {
+  background: #1f2937; color: #e5e7eb; border-radius: var(--radius);
+  padding: 16px; font-family: var(--mono); font-size: 15px; line-height: 1.6;
+  overflow-x: auto; border-bottom: 4px solid #111827; margin-bottom: 14px;
+}
+pre.code code { background: none; padding: 0; }
+pre.code .cm { color: #9ca3af; }
+table {
+  width: 100%; border-collapse: collapse; margin-bottom: 14px;
+  font-size: 14px;
+}
+th, td {
+  text-align: left; padding: 10px 12px; border: 2px solid var(--gray-border);
+  font-weight: 700;
+}
+th { background: var(--gray-bg); }
+td code { white-space: nowrap; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.card {
+  border: 2px solid var(--gray-border); border-radius: var(--radius);
+  border-bottom-width: 4px; padding: 14px;
+}
+.card h3 { margin: 0 0 8px; }
+.card.stack h3 { color: var(--green-shadow); }
+.card.heap h3 { color: var(--blue-shadow); }
+.card.bad h3 { color: var(--red-shadow); }
+.card p { font-size: 14px; margin-bottom: 0; }
+.pill {
+  display: inline-block; border-radius: 999px; padding: 4px 12px;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.5px;
+}
+.pill.good { background: var(--green-light); color: var(--green-shadow); }
+.pill.bad { background: var(--red-light); color: var(--red-shadow); }
+.pill.warn { background: var(--blue-light); color: var(--blue-shadow); }
+.nav { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.nav a {
+  border: 2px solid var(--gray-border); border-bottom-width: 4px;
+  border-radius: var(--radius); padding: 10px 16px; text-decoration: none;
+  background: #fff; font-size: 14px;
+}
+footer { border-top: 2px solid var(--gray-border); padding-top: 20px; }
+@media (max-width: 480px) {
+  .cards { grid-template-columns: 1fr; }
+  h1 { font-size: 23px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Reference</div>
+    <h1>C++ memory cheatsheet</h1>
+    <div class="lede">One page to check against. Compressed from lessons 0001 and 0002.</div>
+  </div>
+</header>
+<main>
+<div class="wrap">
+
+<section>
+  <h2>Stack or heap</h2>
+  <div class="cards">
+    <div class="card stack">
+      <h3>Stack</h3>
+      <p>Locals, parameters, small fixed types. Automatic. Freed when the scope ends. Never leaks, never needs delete.</p>
+    </div>
+    <div class="card heap">
+      <h3>Heap</h3>
+      <p>Anything from <code>new</code> or <code>make_unique</code>. Lives until you release it. You own the lifetime.</p>
+    </div>
+  </div>
+  <table>
+    <tr><th>You want</th><th>Use</th></tr>
+    <tr><td>A plain number or short string</td><td><code>int x</code>, <code>std::string s</code></td></tr>
+    <tr><td>Runtime size known late</td><td><code>std::vector&lt;T&gt; v</code></td></tr>
+    <tr><td>Ownership passed around</td><td><code>std::unique_ptr&lt;T&gt;</code></td></tr>
+    <tr><td>Shared ownership</td><td><code>std::shared_ptr&lt;T&gt;</code></td></tr>
+  </table>
+  <p><span class="pill good">Rule of thumb</span> If you wrote <code>new</code>, you wrote <code>delete</code>. If you can avoid the <code>new</code> by using a standard container or smart pointer, do that instead.</p>
+</section>
+
+<section>
+  <h2>p and *p</h2>
+  <pre class="code"><code>int value = 5;
+int* p = &amp;value;   <span class="cm">// p holds the address of value</span>
+*p = 10;            <span class="cm">// writes through: value becomes 10</span>
+p  = nullptr;       <span class="cm">// reseats: value untouched</span></code></pre>
+  <table>
+    <tr><th>Expression</th><th>Reads or writes</th></tr>
+    <tr><td><code>p</code></td><td>the address</td></tr>
+    <tr><td><code>*p</code></td><td>the value at that address</td></tr>
+    <tr><td><code>&amp;x</code></td><td>the address of <code>x</code></td></tr>
+    <tr><td><code>*p = n</code></td><td>writes <code>n</code> through the pointer</td></tr>
+    <tr><td><code>p = q</code></td><td>reseats <code>p</code>, copies no value</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>The three failures</h2>
+  <p><span class="pill bad">Leak</span> Allocated with <code>new</code>, never released. Memory stays taken until the process exits.</p>
+  <pre class="code"><code>void spawn() {
+  int* hp = new int(100);
+  *hp = *hp + 50;
+}   <span class="cm">// leak: no delete</span>
+
+void spawn() {
+  int* hp = new int(100);
+  *hp = *hp + 50;
+  delete hp;
+}   <span class="cm">// correct: exactly one delete</span></code></pre>
+  <p><span class="pill bad">Dangling</span> Used after <code>delete</code>. The cell is gone but the pointer still holds the address.</p>
+  <pre class="code"><code>int* p = new int(9);
+delete p;
+*p = 10;        <span class="cm">// use after free: undefined</span>
+p = nullptr;    <span class="cm">// now a later misuse fails loudly</span></code></pre>
+  <p><span class="pill bad">Double free</span> Two <code>delete</code> calls on one pointer. Undefined behaviour, and often a hard crash.</p>
+</section>
+
+<section>
+  <h2>Checklist before you leave</h2>
+  <ul>
+    <li>Every <code>new</code> has exactly one matching <code>delete</code> or <code>delete[]</code>.</li>
+    <li>No pointer is read after it was deleted.</li>
+    <li>Deleted pointers are set to <code>nullptr</code> when the lifetime continues.</li>
+    <li><code>new T[n]</code> pairs with <code>delete[]</code>, never plain <code>delete</code>.</li>
+    <li>Compiled with <code>-fsanitize=address,undefined</code> at least once.</li>
+  </ul>
+</section>
+
+<footer>
+  <h2>Keep going</h2>
+  <div class="nav">
+    <a href="../lessons/0001-stack-vs-heap.html">Lesson 0001: stack vs heap</a>
+    <a href="../lessons/0002-pointers-and-dereference.html">Lesson 0002: pointers</a>
+  </div>
+  <p style="margin-top:16px">Stuck on something? Ask your agent. It is your teacher.</p>
+  <p><a href="https://en.cppreference.com/w/cpp/language/new" rel="noopener" target="_blank">cppreference: new and delete</a></p>
+</footer>
+
+</div>
+</main>
+</body>
+</html>

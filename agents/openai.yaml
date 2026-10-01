@@ -1,0 +1,6 @@
+interface:
+  display_name: "Teach Duo"
+  short_description: "Guided lessons with questions, in a fixed design system"
+
+policy:
+  allow_implicit_invocation: false

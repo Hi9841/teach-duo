@@ -1,0 +1,107 @@
+{
+  "title": "Stack, heap, and who deletes",
+  "next": "../lessons/0002-pointers-and-dereference.html",
+  "nextLabel": "Next: pointers and dereference",
+  "reference": "../reference/cpp-memory-cheatsheet.html",
+  "referenceLabel": "Memory cheatsheet",
+  "source": {
+    "label": "cppreference: new and delete operators",
+    "url": "https://en.cppreference.com/w/cpp/language/new"
+  },
+  "screens": [
+    {
+      "id": "intro",
+      "type": "intro",
+      "eyebrow": "Intro",
+      "title": "Stack is automatic. Heap is manual.",
+      "text": "A local variable lives on the stack and dies when the function returns. Heap memory from new lives until you hand it back with delete. That freedom is exactly why leaks and dangling pointers exist.",
+      "code": "void f() {\n  int x = 5;           // stack, cleaned up for you\n  int* p = new int(5); // heap, you own it\n  delete p;            // give it back\n}",
+      "cta": "Start"
+    },
+    {
+      "id": "q1",
+      "type": "pick",
+      "eyebrow": "Question 1 of 6",
+      "title": "Where does score live, and who frees it?",
+      "code": "void play() {\n  int score = 100;\n}",
+      "choices": [
+        { "t": "Stack, freed when play() returns", "ok": true },
+        { "t": "Heap, freed when play() returns", "ok": false },
+        { "t": "Heap, freed after the delete", "ok": false },
+        { "t": "Stack, freed after the delete", "ok": false }
+      ],
+      "why": "A plain local is a stack slot. The compiler reclaims it on return. There is no new, so there is no heap and nothing to delete."
+    },
+    {
+      "id": "q2",
+      "type": "pick",
+      "eyebrow": "Question 2 of 6",
+      "title": "What does that new expression return?",
+      "code": "int* p = new int(42);",
+      "choices": [
+        { "t": "One int on the heap, its address", "ok": true },
+        { "t": "One int on the stack, its address", "ok": false },
+        { "t": "Forty-two ints, the first address", "ok": false },
+        { "t": "One int on the heap, by value", "ok": false }
+      ],
+      "why": "new int(42) asks the heap for room for a single int holding 42 and returns that address. p is a stack variable storing the address."
+    },
+    {
+      "id": "q3",
+      "type": "mem",
+      "eyebrow": "Question 3 of 6",
+      "title": "After this runs, what does p point at?",
+      "code": "int* p = new int(7);\n// the stack holds p, the heap holds 7",
+      "stack": ["p: 0x7F3A"],
+      "heap": ["0x7F3A: 7"],
+      "choices": [
+        { "t": "The heap cell holding the 7", "ok": true },
+        { "t": "The stack slot holding p itself", "ok": false },
+        { "t": "Both slots, they are the same", "ok": false }
+      ],
+      "why": "p lives on the stack. The 7 lives on the heap. p holds the address of that heap cell. Reading it with *p follows the address to the value."
+    },
+    {
+      "id": "q4",
+      "type": "pick",
+      "eyebrow": "Question 4 of 6",
+      "title": "Which one is the real bug?",
+      "code": "void spawn() {\n  int* hp = new int(100);\n  *hp = *hp + 50;\n}",
+      "choices": [
+        { "t": "Missing delete leaks one int", "ok": true },
+        { "t": "The deref corrupts the stack", "ok": false },
+        { "t": "Heap frees itself on return", "ok": false },
+        { "t": "hp must be declared int*", "ok": false }
+      ],
+      "why": "Returning without delete orphans the heap cell. Call spawn a thousand times and you have leaked a thousand ints. Fix it with delete hp before the function returns."
+    },
+    {
+      "id": "q5",
+      "type": "pick",
+      "eyebrow": "Question 5 of 6",
+      "title": "Which line writes 20 into the heap cell?",
+      "code": "int* p = new int(10);\n// which assignment touches the heap?",
+      "choices": [
+        { "t": "*p = 20, p keeps the address", "ok": true },
+        { "t": "p = 20, deref holds address", "ok": false },
+        { "t": "p is address, *p is value", "ok": false },
+        { "t": "Both write to the stack slot", "ok": false }
+      ],
+      "why": "p is the address. *p follows that address and writes the heap cell. Assigning to p itself would reseat the pointer somewhere else instead of changing the value."
+    },
+    {
+      "id": "q6",
+      "type": "pick",
+      "eyebrow": "Question 6 of 6",
+      "title": "Why is this last line a bug?",
+      "code": "int* p = new int(9);\ndelete p;\n*p = 10;   // p still holds the address",
+      "choices": [
+        { "t": "Use after free, the cell is gone", "ok": true },
+        { "t": "Safe, delete just clears value", "ok": false },
+        { "t": "Double free, delete ran twice", "ok": false },
+        { "t": "Safe, p is null afterwards", "ok": false }
+      ],
+      "why": "delete hands the cell back to the allocator but does not touch p, so p still holds the old address. Writing through it is use-after-free, and the result is undefined. Assign p = nullptr right after delete so the mistake fails loudly instead."
+    }
+  ]
+}
