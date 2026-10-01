@@ -2,7 +2,7 @@
 
 Teach one concept at a time as a short browser lesson. Hearts, XP, immediate feedback, and one design that does not change between topics.
 
-One Python file does the work. No framework, no CDN, no third-party packages.
+One helper, one page template, and three short references. No framework, no CDN, no third-party packages.
 
 ## Install
 
@@ -13,11 +13,14 @@ bunx skills add Hi9841/teach-duo
 The repository root is the skill.
 
 ```text
-skills/teach-duo/
-  SKILL.md
-  scripts/lesson.py
-  agents/openai.yaml
-  LICENSE
+agents/
+assets/
+references/
+scripts/
+tests/
+LICENSE
+README.md
+SKILL.md
 ```
 
 Python 3.10+ and a browser on the same computer as the agent.

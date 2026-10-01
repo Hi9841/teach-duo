@@ -45,7 +45,10 @@ EXPECTED = {
     "README.md",
     "LICENSE",
     "agents/openai.yaml",
-    ".gitignore",
+    "assets/lesson.html",
+    "references/design.md",
+    "references/workspace.md",
+    "references/live-session.md",
     "scripts/lesson.py",
     "tests/test_lesson.py",
 }
@@ -63,10 +66,8 @@ RETIRED = (
     "example",
     "tests/fixtures/upstream-SKILL.md",
     "tests/test_package.py",
-    "assets/lesson.html",
-    "references/design.md",
-    "references/workspace.md",
     "tests/fixtures/stack-vs-heap.json",
+    ".gitignore",
 )
 
 ELEMENT_IDS = [
@@ -229,7 +230,7 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(list(ROOT.rglob("SKILL.md")), [ROOT / "SKILL.md"])
 
     def test_doc_links_resolve(self):
-        documents = [ROOT / "SKILL.md", ROOT / "README.md"]
+        documents = [ROOT / "SKILL.md", *sorted((ROOT / "references").glob("*.md"))]
         for document in documents:
             for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
                 if "://" in target or target.startswith("#"):
@@ -240,7 +241,7 @@ class PackageTests(unittest.TestCase):
                 )
 
     def test_template_marker_is_only_the_pack(self):
-        template = load_lesson().PAGE
+        template = (ROOT / "assets" / "lesson.html").read_text(encoding="utf-8")
         self.assertEqual(set(re.findall(r"\{\{([A-Z_]+)\}\}", template)), {"LESSON_PACK"})
         self.assertIn("--green: #58cc02", template.lower())
         self.assertIn("global.DuoSound", template)
@@ -451,7 +452,7 @@ console.log(JSON.stringify({ whileMuted: whileMuted, whileUnmuted: whileUnmuted 
 
 class SoundTests(unittest.TestCase):
     def _run(self, prelude, body):
-        script = prelude + sound_script(load_lesson().PAGE) + "\n" + body
+        script = prelude + sound_script((ROOT / "assets" / "lesson.html").read_text(encoding="utf-8")) + "\n" + body
         with tempfile.TemporaryDirectory(prefix="teach-duo-sound-") as temporary:
             path = Path(temporary) / "sound.js"
             path.write_text(script, encoding="utf-8")
