@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "assets" / "lesson.html"
-TYPES = {"intro", "pick", "mem", "build", "truefalse"}
+TYPES = {"intro", "info", "pick", "mem", "build", "truefalse"}
 EMOJI = re.compile(
     "[\U0001F000-\U0001FAFF\u2190-\u21FF\u2300-\u27BF\u2600-\u26FF\u2B00-\u2BFF\uFE0F]"
 )
@@ -72,8 +72,8 @@ def validate(pack):
     screens = pack.get("screens")
     if not isinstance(screens, list) or not screens:
         raise ValueError("screens must be a non-empty list")
-    if screens[0].get("type") != "intro":
-        raise ValueError("the first screen must be an intro")
+    if screens[0].get("type") not in ("intro", "info"):
+        raise ValueError("the first screen must be an intro or info screen")
     source = pack.get("source")
     if source is not None:
         if not isinstance(source, dict):
@@ -96,9 +96,10 @@ def validate(pack):
         _need(screen, "title", ident)
         if screen.get("hl") is not None and not isinstance(screen.get("hl"), int):
             raise ValueError(f"{ident} hl must be a line number")
-        if kind == "intro":
+        if kind in ("intro", "info"):
             _need(screen, "text", ident)
-            _need(screen, "cta", ident)
+            if kind == "intro":
+                _need(screen, "cta", ident)
             continue
         _need(screen, "why", ident)
         if kind == "build":

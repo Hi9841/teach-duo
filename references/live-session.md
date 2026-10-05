@@ -37,7 +37,7 @@ It refuses emoji, an unknown screen type, uneven options, a missing explanation,
 }
 ```
 
-The first screen is `intro`. Later screens are `pick`, `truefalse`, `mem`, or `build`. Read [design.md](design.md) before writing them.
+The first screen is `intro` or `info`. Later screens are `info`, `pick`, `truefalse`, `mem`, or `build`. Interleave `info` concept screens with retrieval questions. Read [design.md](design.md) before writing them.
 
 ## Reference page
 

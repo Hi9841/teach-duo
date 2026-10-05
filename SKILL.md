@@ -12,7 +12,7 @@ Teach one tightly scoped idea at a time as a browser lesson. The workspace remem
 
 Knowledge comes from trusted sources. Skills come from short retrieval practice. Wisdom comes from a real community, and you point at one instead of pretending to be it.
 
-Fluency is in-the-moment recall. Storage strength is the goal. Build it with retrieval, spacing, and interleaving. A lesson that feels easy to read and hard to answer is doing it right. Coverage is not learning.
+Fluency is in-the-moment recall. Storage strength is the goal. Build it with retrieval, spacing, and interleaving. A lesson that feels easy to read and hard to answer is doing it right. Coverage is not learning. Interleave reading with retrieval: present a clear, tight info screen to read first, then one or two questions testing that exact mechanism. Choices and token banks are automatically randomized upon display for active recall.
 
 Read [references/workspace.md](references/workspace.md) before creating or editing `MISSION.md`, `RESOURCES.md`, learning records, or a glossary. Read [references/design.md](references/design.md) before writing a lesson. Read [references/live-session.md](references/live-session.md) for the helper commands. Do not invent a second design, a second template, or hand-written lesson HTML.
 

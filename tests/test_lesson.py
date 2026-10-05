@@ -320,6 +320,47 @@ console.log(JSON.stringify({html: codeBlock(lesson[1].code, lesson[1].hl)}));
         with self.assertRaises(ValueError):
             self.lesson.reference_page("Memory", fragment.read_text(encoding="utf-8"))
 
+    def test_info_screen_and_randomized_choices(self):
+        pack = {
+            "title": "Interleaved lesson",
+            "screens": [
+                {
+                    "type": "info",
+                    "title": "First concept",
+                    "text": "Here is an explanation to read before the question.",
+                    "code": "int a = 1;",
+                },
+                {
+                    "type": "pick",
+                    "title": "Where does a live?",
+                    "choices": [
+                        {"t": "On the stack", "ok": True},
+                        {"t": "On the heap", "ok": False},
+                    ],
+                    "why": "It is a local variable.",
+                },
+            ],
+        }
+        validated = self.lesson.validate(pack)
+        self.assertEqual(len(validated["screens"]), 2)
+        page = self.lesson.render(validated)
+        self.assertIn("First concept", page)
+        runtime = "\n".join(scripts_of(page))
+        driver = r"""
+var quiet = [];
+render();
+quiet.push(__el("sheet").classList.contains("show"));
+checkBtn.onclick();
+quiet.push(i === 1);
+var cur = lesson[1];
+selected = cur.choices.findIndex(function (c) { return c.ok; });
+check();
+quiet.push(__el("sheet").className.indexOf("good") !== -1);
+console.log(JSON.stringify({results: quiet}));
+"""
+        out = run_with_bun(runtime, driver)
+        self.assertEqual(out["results"], [False, True, True])
+
 
 class BehaviourTests(unittest.TestCase):
     @classmethod

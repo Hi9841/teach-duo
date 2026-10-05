@@ -23,15 +23,16 @@ Neutrals are border `#E5E5E5`, background `#F7F7F7`, text `#3C3C3C`. Radius is 1
 
 ## Screens
 
-One idea per lesson. An intro plus five to eight questions.
+One idea per lesson. An intro or info screen plus practice questions. Interleave reading with retrieval: present a clear, tight `info` screen to read first, then one or two questions testing that exact mechanism, then the next concept screen. Never dump everything up front.
 
-1. **intro.** Title, two sentences in `text`, optional `code`, and `cta` such as `Start`. No lecture.
-2. **pick.** One correct option and distractors from bugs the learner actually writes.
-3. **truefalse.** One sharp invariant. Same choice rules as pick.
-4. **mem.** `stack` and `heap` lists of short cell labels. Optional `teach` is one sentence under the diagram. Add one cell at a time.
-5. **build.** `tokens` in bank order, `answer` in tap order.
+1. **intro.** Overview for the first screen. Title, two sentences in `text`, optional `code`, and `cta` such as `Start`.
+2. **info.** Concept explanation to read before practicing. Title, concise `text`, optional `code`, optional `cta` (`Continue`). Teach one atomic mechanism before quizzing it.
+3. **pick.** One correct option and distractors from bugs the learner actually writes. Choices are automatically randomized upon display.
+4. **truefalse.** One sharp invariant. Same choice rules as pick. Choices are randomized upon display.
+5. **mem.** `stack` and `heap` lists of short cell labels. Optional `teach` is one sentence under the diagram. Add one cell at a time. Choices are randomized upon display.
+6. **build.** `tokens` in bank order, `answer` in tap order. Tokens in the bank are randomized upon display so the learner actively assembles them.
 
-`why` is required after the intro. One or two sentences on the mechanism. `hl` is a 1-based line number inside `code`, not HTML. The helper escapes every string.
+`why` is required on question screens. One or two sentences on the mechanism. `hl` is a 1-based line number inside `code`, not HTML. The helper escapes every string.
 
 Options on one screen stay within two words of each other. The prompt is one sentence. Quiz the mechanism that causes the bug. A link needs its label. `source` is the best page you actually found.
 
