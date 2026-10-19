@@ -409,34 +409,34 @@ console.log(JSON.stringify({
         self.assertTrue(out["finalHtml"])
         self.assertFalse(out["reviewed"])
 
-    def test_wrong_answers_drain_hearts(self):
+    def test_a_miss_repeats_only_that_question(self):
         driver = r"""
-var guard = lesson.length + 5;
-var outOfHearts = false;
-while (i < lesson.length && guard-- > 0) {
-  var cur = lesson[i];
-  if (cur.type === "intro") { checkBtn.onclick(); continue; }
-  if (cur.type === "build") { built = ["nope"]; checkBtn.disabled = false; }
-  else {
-    selected = cur.choices.findIndex(function (c) { return !c.ok; });
-    checkBtn.disabled = false;
-  }
+render();
+checkBtn.onclick();
+var at = i;
+for (var miss = 0; miss < 4; miss++) {
+  selected = lesson[i].choices.findIndex(function (c) { return !c.ok; });
+  checkBtn.disabled = false;
   check();
-  if (__el("nextBtn").textContent === "Retry") { outOfHearts = true; break; }
   nextBtn.onclick();
 }
+var stayed = i === at;
+selected = lesson[i].choices.findIndex(function (c) { return c.ok; });
+checkBtn.disabled = false;
+check();
+nextBtn.onclick();
 console.log(JSON.stringify({
+  stayed: stayed,
+  movedOn: i === at + 1,
   xp: String(__el("xp").textContent),
   heartsLost: ["h1","h2","h3"].filter(function (h) { return __el(h).classList.contains("lost"); }).length,
-  outOfHearts: outOfHearts,
-  explanation: __el("sheetBody").textContent.indexOf("Out of hearts") !== -1,
 }));
 """
         out = run_with_bun(self.script, driver)
+        self.assertTrue(out["stayed"])
+        self.assertTrue(out["movedOn"])
         self.assertEqual(out["xp"], "0")
         self.assertEqual(out["heartsLost"], 3)
-        self.assertTrue(out["outOfHearts"])
-        self.assertTrue(out["explanation"])
 
     def test_retry_resets_the_run(self):
         driver = r"""
@@ -492,7 +492,7 @@ console.log(JSON.stringify({ whileMuted: whileMuted, whileUnmuted: whileUnmuted 
 
 
 class NextLessonTests(unittest.TestCase):
-    def test_next_lesson_opens_only_after_a_perfect_run(self):
+    def test_next_lesson_opens_once_every_question_is_right(self):
         lesson = load_lesson()
         pack = {
             "title": "One check",
@@ -523,24 +523,33 @@ class NextLessonTests(unittest.TestCase):
             lesson.build_file(data, page, False)
             script = "\n".join(scripts_of(page.read_text(encoding="utf-8")))
         driver = r"""
-function finish(correct) {
+function finish(mode) {
   restart();
   checkBtn.onclick();
-  var cur = lesson[i];
-  selected = cur.choices.findIndex(function (c) { return correct ? c.ok : !c.ok; });
+  if (mode === "skip") { skipBtn.onclick(); return __el("app").innerHTML; }
+  if (mode === "miss") {
+    selected = lesson[i].choices.findIndex(function (c) { return !c.ok; });
+    checkBtn.disabled = false;
+    check();
+    nextBtn.onclick();
+  }
+  selected = lesson[i].choices.findIndex(function (c) { return c.ok; });
   checkBtn.disabled = false;
   check();
   nextBtn.onclick();
   return __el("app").innerHTML;
 }
 console.log(JSON.stringify({
-  missed: finish(false),
-  perfect: finish(true),
+  skipped: finish("skip"),
+  missed: finish("miss"),
+  perfect: finish("perfect"),
 }));
 """
         out = run_with_bun(script, driver)
-        self.assertIn("Answer every question correctly", out["missed"])
-        self.assertNotIn('href="0002-next.html"', out["missed"])
+        self.assertIn("Answer every question correctly", out["skipped"])
+        self.assertNotIn('href="0002-next.html"', out["skipped"])
+        self.assertIn('href="0002-next.html"', out["missed"])
+        self.assertIn("Review:", out["missed"])
         self.assertIn('href="0002-next.html"', out["perfect"])
         self.assertNotIn("Answer every question correctly", out["perfect"])
 

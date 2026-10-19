@@ -1099,7 +1099,7 @@ const LESSON = {{LESSON_PACK}};
 const lesson = LESSON.screens;
 document.title = LESSON.title;
 
-let i = 0, xp = 0, hearts = 3, selected = null, built = [], mistakes = [], firstTry = true;
+let i = 0, xp = 0, hearts = 3, selected = null, built = [], mistakes = [], skipped = [], firstTry = true, retry = false;
 
 const app = document.getElementById("app");
 const progress = document.getElementById("progress");
@@ -1162,7 +1162,7 @@ function shuffleArray(arr) {
 function render() {
   renderHearts();
   sheet.classList.remove("show");
-  selected = null; built = []; firstTry = true;
+  selected = null; built = []; firstTry = !retry; retry = false;
   checkBtn.disabled = true;
   checkBtn.textContent = "Check";
   skipBtn.style.display = "";
@@ -1174,7 +1174,7 @@ function render() {
     var eyebrow = q.eyebrow || (q.type === "intro" ? "Overview" : "Read & Learn");
     var ctaText = q.cta || (q.type === "intro" ? "Start" : "Continue");
     var subText = q.type === "intro"
-      ? "One question per screen. Three hearts. Press 1-4 to answer, Enter to check."
+      ? "One question per screen. A miss costs a heart, then you try again. Press 1-4 to answer, Enter to check."
       : "Read the concept above, then press Enter or click Continue to practice.";
     app.innerHTML = '<div class="eyebrow">' + esc(eyebrow) + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
@@ -1299,7 +1299,7 @@ document.addEventListener("keydown", function (e) {
 });
 
 checkBtn.onclick = check;
-skipBtn.onclick = function () { if (lesson[i] && lesson[i].type !== "intro" && lesson[i].type !== "info") { mistakes.push(lesson[i].title); i++; render(); } };
+skipBtn.onclick = function () { if (lesson[i] && lesson[i].type !== "intro" && lesson[i].type !== "info") { skipped.push(lesson[i].title); i++; render(); } };
 document.getElementById("restartBtn").onclick = function () { restart(); };
 nextBtn.onclick = next;
 
@@ -1312,9 +1312,10 @@ function check() {
     correct = JSON.stringify(built) === JSON.stringify(q.answer);
   } else {
     correct = !!(q.choices[selected] && q.choices[selected].ok);
+    /* A miss marks only the pick, so the retry is still recall. */
     document.querySelectorAll(".choice").forEach(function (el, n) {
-      if (q.choices[n].ok) el.classList.add("correct");
-      else if (n === selected) el.classList.add("wrong");
+      if (correct && q.choices[n].ok) el.classList.add("correct");
+      else if (n === selected && !correct) el.classList.add("wrong");
     });
   }
 
@@ -1331,7 +1332,7 @@ function check() {
     if (firstTry) window.setTimeout(function () { sound("xp"); }, 120);
   } else {
     hearts = Math.max(0, hearts - 1);
-    firstTry = false;
+    retry = true;
     mistakes.push(q.title);
     title.textContent = q.nudge || "Not quite.";
     sheet.className = "sheet show bad";
@@ -1342,30 +1343,26 @@ function check() {
   }
 
   body.textContent = q.why;
+  nextBtn.textContent = correct ? "Continue" : "Try again";
   document.getElementById("footer").style.display = "none";
   sheet.classList.add("show");
   renderHearts();
-
-  if (!correct && hearts === 0) {
-    body.textContent = q.why + " Out of hearts. Retry the lesson to keep the streak.";
-    nextBtn.textContent = "Retry";
-    nextBtn.onclick = function () {
-      nextBtn.textContent = "Continue";
-      nextBtn.onclick = next;
-      restart();
-    };
-    window.setTimeout(function () { sound("fail"); }, 420);
-  }
 }
 
+/* After a miss, the same question comes back with its choices in a new order. */
 function next() {
+  if (retry) {
+    delete lesson[i]._shuffled;
+    render();
+    return;
+  }
   i++;
   if (i >= lesson.length) renderEnd();
   else render();
 }
 
 function restart() {
-  i = 0; xp = 0; hearts = 3; mistakes = [];
+  i = 0; xp = 0; hearts = 3; mistakes = []; skipped = []; retry = false;
   lesson.forEach(function (s) { delete s._shuffled; });
   nextBtn.textContent = "Continue";
   nextBtn.onclick = next;
@@ -1382,8 +1379,8 @@ function renderEnd() {
   document.getElementById("footer").style.display = "none";
   sheet.classList.remove("show");
   progress.style.width = "100%";
-  const uniq = Array.from(new Set(mistakes));
-  const passed = uniq.length === 0;
+  const uniq = Array.from(new Set(mistakes.concat(skipped)));
+  const passed = skipped.length === 0;
   if (passed) sound("complete");
   let links = '<ul class="end-links">';
   if (LESSON.next) {
