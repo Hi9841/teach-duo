@@ -1232,6 +1232,7 @@ function render() {
     const ans = document.getElementById("ans");
     document.querySelectorAll("#bank .token").forEach(function (b) {
       b.onclick = function () {
+        if (b.classList.contains("picked")) return;
         built.push(b.dataset.t);
         b.classList.add("picked");
         renderBuilt();
@@ -1278,18 +1279,23 @@ function bindPick() {
   });
 }
 
+/* A handled key must not also activate the focused button, or one press acts twice. */
 document.addEventListener("keydown", function (e) {
   const q = lesson[i];
   if (!q) return;
   if (sheet.classList.contains("show")) {
-    if (e.key === "Enter") next();
+    if (e.key === "Enter") { e.preventDefault(); next(); }
     return;
   }
   if (q.choices && ["1", "2", "3", "4"].indexOf(e.key) !== -1) {
+    e.preventDefault();
     const el = document.querySelector('.choice[data-n="' + (+e.key - 1) + '"]');
     if (el) el.click();
   }
-  if (e.key === "Enter" && !checkBtn.disabled) check();
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (!checkBtn.disabled) check();
+  }
 });
 
 checkBtn.onclick = check;
