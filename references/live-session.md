@@ -7,16 +7,27 @@ Use [scripts/lesson.py](../scripts/lesson.py), resolved from the directory that 
 Write the lesson JSON in the teaching workspace, then:
 
 ```text
-python <skill-directory>/scripts/lesson.py build <data.json> <lessons/NNNN-name.html> --open
+python <skill-directory>/scripts/lesson.py build <data.json> <lessons/NNNN-name.html> --wait
 ```
 
-Number from the highest existing lesson. `--open` launches the browser. The helper prints a short status on stdout:
+Number from the highest existing lesson. Run it in the background. The helper prints a short status on stdout:
 
 ```text
 status: "wrote"
 path: "<absolute output path>"
 screens: "7"
 ```
+
+`--wait` serves the workspace on `127.0.0.1`, opens the lesson there, and prints `status: "waiting"` with the URL. When the learner presses Next after a run with no skips, it prints the result and exits 0:
+
+```text
+status: "done"
+lesson: "<title>"
+xp: "40"
+misses: "[\"<question title>\"]"
+```
+
+That exit is your cue. Write the learning record if they earned one, then build the next lesson with `--wait`. Use `--open` instead to only open the file.
 
 It refuses emoji, an unknown screen type, uneven options, a missing explanation, and any output path inside the skill directory. A bad lesson exits 1 with `status: "error"`. Fix the JSON and run the command again. Do not patch the generated HTML.
 
@@ -25,8 +36,6 @@ It refuses emoji, an unknown screen type, uneven options, a missing explanation,
 ```json
 {
   "title": "Stack, heap, and who deletes",
-  "next": "0002-pointers.html",
-  "nextLabel": "Next: pointers",
   "reference": "../reference/memory.html",
   "referenceLabel": "Memory cheatsheet",
   "source": {"label": "cppreference: new and delete", "url": "https://example.com"},

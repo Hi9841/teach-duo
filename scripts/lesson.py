@@ -8,7 +8,10 @@ if __name__ == "__main__" and sys.argv[1:] in (["--version"], ["-v"], ["-V"]):
 import argparse
 import json
 import re
+import threading
 import webbrowser
+from functools import partial
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -81,7 +84,7 @@ def validate(pack):
         for key in ("label", "url"):
             if not isinstance(source.get(key), str) or not source[key].strip():
                 raise ValueError(f"source.{key} is required")
-    for field, label in (("next", "nextLabel"), ("reference", "referenceLabel")):
+    for field, label in (("reference", "referenceLabel"),):
         href = pack.get(field) or ""
         text = pack.get(label) or ""
         if bool(href) != bool(text):
@@ -123,8 +126,6 @@ def render(pack):
     template = TEMPLATE.read_text(encoding="utf-8")
     meta = {
         "title": pack["title"],
-        "next": pack.get("next") or "",
-        "nextLabel": pack.get("nextLabel") or "",
         "reference": pack.get("reference") or "",
         "referenceLabel": pack.get("referenceLabel") or "",
         "source": pack.get("source"),
@@ -183,6 +184,36 @@ def build_file(data_path, output_path, open_page):
     return output, len(pack["screens"])
 
 
+class _Finish(SimpleHTTPRequestHandler):
+    """Serve the workspace. A POST to /done carries the result and stops the server."""
+
+    def do_POST(self):
+        if self.path != "/done":
+            self.send_error(404)
+            return
+        body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        self.server.result = json.loads(body or b"{}")
+        self.send_response(204)
+        self.end_headers()
+        threading.Thread(target=self.server.shutdown).start()
+
+    def log_message(self, *args):
+        pass
+
+
+def wait_for_finish(output):
+    """Open the lesson over localhost and block until the learner presses Next."""
+    root = output.parent.parent
+    server = HTTPServer(("127.0.0.1", 0), partial(_Finish, directory=str(root)))
+    server.result = {}
+    url = f"http://127.0.0.1:{server.server_port}/{output.relative_to(root).as_posix()}"
+    report(status="waiting", url=url)
+    webbrowser.open(url)
+    server.serve_forever()
+    server.server_close()
+    return server.result
+
+
 def reference_file(fragment_path, output_path, title):
     body = Path(fragment_path).read_text(encoding="utf-8")
     output = _outside_skill(Path(output_path))
@@ -198,6 +229,7 @@ def main():
     build.add_argument("data")
     build.add_argument("output")
     build.add_argument("--open", action="store_true")
+    build.add_argument("--wait", action="store_true")
     reference = commands.add_parser("reference")
     reference.add_argument("fragment")
     reference.add_argument("output")
@@ -208,8 +240,12 @@ def main():
         return 2
     try:
         if args.command == "build":
-            output, count = build_file(args.data, args.output, args.open)
+            output, count = build_file(args.data, args.output, args.open and not args.wait)
             report(status="wrote", path=str(output), screens=str(count))
+            if args.wait:
+                result = wait_for_finish(output)
+                report(status="done", lesson=result.get("title", ""), xp=str(result.get("xp", 0)),
+                       misses=json.dumps(result.get("misses", []), ensure_ascii=False))
         else:
             output = reference_file(args.fragment, args.output, args.title)
             report(status="wrote", path=str(output), kind="reference")

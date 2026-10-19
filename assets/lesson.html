@@ -1382,17 +1382,11 @@ function renderEnd() {
   const uniq = Array.from(new Set(mistakes.concat(skipped)));
   const passed = skipped.length === 0;
   if (passed) sound("complete");
-  let links = '<ul class="end-links">';
-  if (LESSON.next) {
-    if (passed) {
-      links += '<li><a href="' + esc(LESSON.next) + '">' + icon("arrowRight") +
-        '<span>' + esc(LESSON.nextLabel) + '</span></a></li>';
-    } else {
-      links += '<li><button type="button" class="end-next" disabled>' + icon("arrowRight") +
-        '<span>' + esc(LESSON.nextLabel) + '</span></button>' +
-        '<p class="lock-note">Answer every question correctly to open the next lesson.</p></li>';
-    }
-  }
+  let links = '<ul class="end-links"><li id="nextItem">' +
+    '<button type="button" class="end-next" ' + (passed ? 'onclick="askForNext()"' : "disabled") + '>' +
+    icon("arrowRight") + '<span>Next lesson</span></button>' +
+    (passed ? "" : '<p class="lock-note">Answer every question correctly to open the next lesson.</p>') +
+    '</li>';
   if (LESSON.reference) {
     links += '<li><a href="' + esc(LESSON.reference) + '">' + icon("arrowRight") +
       '<span>' + esc(LESSON.referenceLabel) + '</span></a></li>';
@@ -1417,6 +1411,15 @@ function renderEnd() {
       '<button class="btn secondary" onclick="restart()">Retry</button>' +
       '<button class="btn" onclick="restart()">Practice again</button>' +
     '</div></div>';
+}
+
+/* The helper serves the page and waits for this report. It exits, and the agent writes the next lesson. */
+function askForNext() {
+  var item = document.getElementById("nextItem");
+  function note(text) { item.innerHTML = '<p class="lock-note">' + esc(text) + '</p>'; }
+  fetch("/done", { method: "POST", body: JSON.stringify({ title: LESSON.title, xp: xp, misses: Array.from(new Set(mistakes)) }) })
+    .then(function (r) { if (!r.ok) throw r; note("Your agent is writing the next lesson. It opens in a new tab."); })
+    .catch(function () { note("Tell your agent you finished. It writes the next lesson."); });
 }
 
 if (window.DuoIcons) DuoIcons.hydrate();

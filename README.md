@@ -47,11 +47,11 @@ learning-records/0001-what-they-showed.md
 ## Generate a page
 
 ```bash
-python scripts/lesson.py build lesson.json lessons/0001-name.html --open
+python scripts/lesson.py build lesson.json lessons/0001-name.html --wait
 python scripts/lesson.py reference fragment.html reference/sheet.html --title "Memory"
 ```
 
-`build` checks the question shape and writes one HTML file. `reference` wraps prose in the same stylesheet. The helper refuses emoji, uneven options, and a lesson written into the skill directory.
+`build` checks the question shape and writes one HTML file. `--wait` serves it on localhost and exits when the learner presses Next, so the agent can write the next lesson. `reference` wraps prose in the same stylesheet. The helper refuses emoji, uneven options, and a lesson written into the skill directory.
 
 ## Verification
 

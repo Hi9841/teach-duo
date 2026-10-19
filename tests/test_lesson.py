@@ -496,8 +496,6 @@ class NextLessonTests(unittest.TestCase):
         lesson = load_lesson()
         pack = {
             "title": "One check",
-            "next": "0002-next.html",
-            "nextLabel": "Next: the second lesson",
             "screens": [
                 {
                     "type": "intro",
@@ -547,10 +545,10 @@ console.log(JSON.stringify({
 """
         out = run_with_bun(script, driver)
         self.assertIn("Answer every question correctly", out["skipped"])
-        self.assertNotIn('href="0002-next.html"', out["skipped"])
-        self.assertIn('href="0002-next.html"', out["missed"])
+        self.assertNotIn("askForNext()", out["skipped"])
+        self.assertIn("askForNext()", out["missed"])
         self.assertIn("Review:", out["missed"])
-        self.assertIn('href="0002-next.html"', out["perfect"])
+        self.assertIn("askForNext()", out["perfect"])
         self.assertNotIn("Answer every question correctly", out["perfect"])
 
 

@@ -25,11 +25,11 @@ If there is no clear topic, ask what they want to learn and nothing else. The te
 1. If `MISSION.md` is missing or vague, ask why they want this before teaching. One concrete outcome. Confirm before you change a mission that already exists.
 2. Read the workspace: mission, `NOTES.md`, resources, learning records, glossary, and the lessons already there. Take claims from the resources. Do not teach a fact from memory when a source should back it.
 3. Pick the next lesson inside their zone of proximal development. Use the mission and the records. Skip what they have already shown they can do. One idea. A few minutes.
-4. Write one JSON file and run the helper's `build` command with `--open`. Number from the highest existing lesson. Tell them to finish it in the browser and come back with what was unclear.
+4. Write one JSON file and run the helper's `build` command with `--wait` in the background. Number from the highest existing lesson. Tell them to finish it in the browser and press Next, or come back with what was unclear.
 5. When they show they can use the idea, write a learning record. Add a glossary term only once they can use it. Write a reference page when the idea is something they will look up later.
 
 Record how they want to be taught in `NOTES.md`.
 
 ## Finish
 
-The page already tells them to ask you. After the lesson, answer the unclear part, then decide the next record or the next lesson. Do not start implementation work unless they ask for it.
+When the helper reports `status: "done"`, they pressed Next. Use the misses to decide the record and the next lesson, then build it the same way. If they come back with a question instead, answer it first. Do not start implementation work unless they ask for it.
