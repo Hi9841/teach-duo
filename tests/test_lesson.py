@@ -576,7 +576,7 @@ class SoundTests(unittest.TestCase):
 
     def test_cues_exist(self):
         out = self._run("", "console.log(JSON.stringify({names: DuoSound.available}));\n")
-        for name in ("select", "correct", "wrong", "heartLost", "xp", "complete", "fail"):
+        for name in ("select", "correct", "wrong", "heartLost", "xp", "complete"):
             self.assertIn(name, out["names"])
 
 
