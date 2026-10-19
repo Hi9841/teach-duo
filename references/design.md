@@ -8,18 +8,23 @@ Top bar, fixed order: restart, mute, progress, three hearts, XP. One question on
 
 Hearts: 3. First-try correct answers: 10 XP. Keys `1`-`4` select, Enter checks, Enter again continues. A handled key never also clicks the focused button.
 
-Icons are inline SVG in the template. Never emoji. Sound is synthesised in the page. Mute is a real gate and it persists. Do not add audio files or a font CDN.
+Icons are Hugeicons, inline SVG in the template at stroke 2.5. Never emoji. Sound is synthesised in the page. Mute is a real gate and it persists. Do not add audio files or a font CDN. Nunito and Nunito Sans are embedded in the template.
 
 ## Tokens
 
-| Role | Value |
-| --- | --- |
-| Green, primary | `#58CC02` |
-| Blue, selection | `#1CB0F6` |
-| Red, error | `#FF4B4B` |
-| Yellow, XP | `#FFC800` |
+The page is the ShadLingo design system, 1:1: a shadcn theme in style maia with light and dark tokens. The template's `:root` owns the values. Do not restyle per topic.
 
-Neutrals are border `#E5E5E5`, background `#F7F7F7`, text `#3C3C3C`. Radius is 16px. Shadow is a flat 4px bottom edge, never a blur.
+| Role | Token | Light |
+| --- | --- | --- |
+| Primary, progress, Check | `--primary` | `oklch(0.585 0.18 139)` |
+| Selection, links, outline text | `--spark-blue` | `oklch(0.716 0.135 239)` |
+| Error, hearts | `--destructive` | `oklch(0.64 0.22 25)` |
+| Correct sheet | `--accent` | `oklch(0.96 0.08 130)` |
+| XP | `--chart-3` | `oklch(0.76 0.17 62)` |
+| Text | `--foreground` | `oklch(0.3134 0.0687 239.411)` |
+| Border, input | `--border` | `oklch(0.86 0.022 239)` |
+
+Type is Nunito, extrabold for buttons, labels, and titles. Buttons and choices use a 16px radius, a 2px border, and a flat 4px edge in the shadow color. Cards use rounded-2xl with a flat 6px border edge. Never use a blur.
 
 ## Screens
 

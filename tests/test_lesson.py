@@ -243,7 +243,7 @@ class PackageTests(unittest.TestCase):
     def test_template_marker_is_only_the_pack(self):
         template = (ROOT / "assets" / "lesson.html").read_text(encoding="utf-8")
         self.assertEqual(set(re.findall(r"\{\{([A-Z_]+)\}\}", template)), {"LESSON_PACK"})
-        self.assertIn("--green: #58cc02", template.lower())
+        self.assertIn("--primary: oklch(0.585 0.18 139)", template.lower())
         self.assertIn("global.DuoSound", template)
         self.assertIn('data-icon="heart"', template)
 
@@ -310,7 +310,7 @@ console.log(JSON.stringify({html: codeBlock(lesson[1].code, lesson[1].hl)}));
         output = Path(self.directory.name) / "sheet.html"
         self.lesson.reference_file(fragment, output, "Memory")
         page = output.read_text(encoding="utf-8")
-        self.assertIn("--green: #58cc02", page.lower())
+        self.assertIn("--primary: oklch(0.585 0.18 139)", page.lower())
         self.assertIn("<h2>Stack</h2>", page)
         self.assertNotIn("<script", page.lower())
 
