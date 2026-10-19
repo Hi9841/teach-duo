@@ -1196,7 +1196,7 @@ function render() {
   }
 
   if (q.type === "mem") {
-    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow || "Question") + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
       codeBlock(q.code, q.hl) +
       '<div class="mem">' +
@@ -1253,7 +1253,7 @@ function render() {
     return;
   }
 
-  app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow) + '</div>' +
+  app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow || "Question") + '</div>' +
     '<h1 class="q">' + esc(q.title) + '</h1>' +
     (q.teach ? '<div class="prose"><p>' + esc(q.teach) + '</p></div>' : "") +
     codeBlock(q.code, q.hl) +
