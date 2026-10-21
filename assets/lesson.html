@@ -1253,7 +1253,7 @@ function renderHearts() {
 }
 
 function esc(s) {
-  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function codeBlock(code, hl) {
@@ -1342,7 +1342,7 @@ function render() {
       '<div class="token-bank answer-line" id="ans"></div>' +
       '<div class="token-bank" id="bank">' +
         bankTokens.map(function (t, n) {
-          return '<button class="token" data-t="' + esc(t) + '" data-n="' + n + '">' + esc(t) + '</button>';
+          return '<button class="token" data-n="' + n + '">' + esc(t) + '</button>';
         }).join("") +
       '</div>' +
       '<div class="sub">Tap the tokens in order. Tap the answer line to clear it.</div>';
@@ -1350,7 +1350,7 @@ function render() {
     document.querySelectorAll("#bank .token").forEach(function (b) {
       b.onclick = function () {
         if (b.classList.contains("picked")) return;
-        built.push(b.dataset.t);
+        built.push(bankTokens[+b.dataset.n]);
         b.classList.add("picked");
         renderBuilt();
         sound("select");
