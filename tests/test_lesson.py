@@ -72,7 +72,7 @@ RETIRED = (
 
 ELEMENT_IDS = [
     "app", "progress", "checkBtn", "skipBtn", "sheet", "sheetTitle",
-    "sheetBody", "nextBtn", "restartBtn", "soundBtn", "h1", "h2", "h3",
+    "sheetBody", "nextBtn", "missBtn", "restartBtn", "soundBtn", "h1", "h2", "h3",
     "xp", "footer",
 ]
 
@@ -386,11 +386,8 @@ var guard = lesson.length + 5;
 while (i < lesson.length && guard-- > 0) {
   var cur = lesson[i];
   if (cur.type === "intro") { checkBtn.onclick(); continue; }
-  if (cur.type === "build") { built = cur.answer.slice(); checkBtn.disabled = false; }
-  else {
-    selected = cur.choices.findIndex(function (c) { return c.ok; });
-    checkBtn.disabled = false;
-  }
+  selected = cur.choices.findIndex(function (c) { return c.ok; });
+  checkBtn.disabled = false;
   check();
   nextBtn.onclick();
 }

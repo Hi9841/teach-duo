@@ -12,7 +12,7 @@ Teach one tightly scoped idea at a time as a browser lesson. The workspace remem
 
 Knowledge comes from trusted sources. Skills come from short retrieval practice. Wisdom comes from a real community, and you point at one instead of pretending to be it.
 
-Fluency is in-the-moment recall. Storage strength is the goal. Build it with retrieval, spacing, and interleaving. A lesson that feels easy to read and hard to answer is doing it right. Coverage is not learning. Interleave reading with retrieval: present a clear, tight info screen to read first, then one or two questions testing that exact mechanism. Choices and token banks are automatically randomized upon display for active recall.
+Fluency is in-the-moment recall. Storage strength is the goal. Build it with retrieval, spacing, and interleaving. A lesson that feels easy to read and hard to answer is doing it right. Coverage is not learning. Interleave reading with retrieval: present a clear, tight info screen to read first, then one or two questions testing that exact mechanism. Choices are randomized on display. For code, make them write it: a `write` screen asks for an open answer, and the learner compares it with a model answer.
 
 Read [references/workspace.md](references/workspace.md) before creating or editing `MISSION.md`, `RESOURCES.md`, learning records, or a glossary. Read [references/design.md](references/design.md) before writing a lesson. Read [references/live-session.md](references/live-session.md) for the helper commands. Do not invent a second design, a second template, or hand-written lesson HTML.
 
@@ -32,4 +32,4 @@ Record how they want to be taught in `NOTES.md`.
 
 ## Finish
 
-When the helper reports `status: "done"`, they pressed Next. Use the misses to decide the record and the next lesson, then build it the same way. If they come back with a question instead, answer it first. Do not start implementation work unless they ask for it.
+When the helper reports `status: "done"`, they pressed Next. Read the `answers` the learner wrote and graded. Use them and the misses to decide the record and the next lesson, then build it the same way. If they come back with a question instead, answer it first. Do not start implementation work unless they ask for it.

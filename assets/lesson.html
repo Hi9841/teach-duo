@@ -460,58 +460,149 @@ h1.q {
   background: var(--card);
 }
 
-/* build question: token bank */
+/* write question: an editor on the night-ink code panel, with a title bar and a line gutter */
 
-.token-bank {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: var(--gap) 0;
-  min-height: 64px;
-  padding: var(--pad);
-  border: 2px dashed var(--border);
+.editor {
+  background: var(--night-ink);
+  border: 2px solid var(--night-ink);
   border-radius: var(--radius-card);
-  align-items: center;
-}
-
-.token-bank.answer-line {
-  border-style: solid;
-  border-color: var(--spark-blue);
-  background: var(--secondary);
-  min-height: 64px;
-  cursor: pointer;
-}
-
-/* token: outline button, size sm (h-10 px-4) */
-.token {
-  border: 2px solid var(--input);
   box-shadow: 0 var(--lift) 0 0 var(--input);
-  border-radius: var(--radius-control);
-  height: 40px;
-  padding: 0 var(--pad);
-  margin-bottom: var(--lift);
-  font-family: var(--font);
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--foreground);
-  cursor: pointer;
-  background: var(--card);
-  display: inline-flex;
+  margin: 8px 0 calc(var(--pad) + var(--lift));
+  overflow: hidden;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.editor:focus-within {
+  border-color: var(--spark-blue);
+  box-shadow: 0 var(--lift) 0 0 var(--spark-blue);
+}
+
+@media (prefers-color-scheme: dark) {
+  .editor {
+    background: oklch(0.13 0.05 239);
+    border-color: var(--border);
+  }
+}
+
+.editor-bar {
+  display: flex;
   align-items: center;
+  gap: var(--gap);
+  padding: 10px var(--pad);
+  border-bottom: 2px solid color-mix(in oklab, oklch(0.96 0.015 239) 12%, transparent);
 }
 
-.token:hover {
-  background: var(--muted);
+.editor-dots {
+  display: flex;
+  gap: 6px;
 }
 
-.token:focus-visible {
-  outline: 3px solid var(--ring);
-  outline-offset: 2px;
+.editor-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--destructive);
 }
 
-.token.picked {
-  opacity: 0.35;
-  pointer-events: none;
+.editor-dots i:nth-child(2) {
+  background: var(--chart-3);
+}
+
+.editor-dots i:nth-child(3) {
+  background: var(--primary);
+}
+
+.editor-file {
+  color: var(--faded-gray);
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.editor-body {
+  display: flex;
+}
+
+.gutter,
+.draft {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* the gutter scrolls with the box, so it keeps room for the box's last line and scrollbar */
+.gutter {
+  min-width: 44px;
+  padding: 14px 10px 40px var(--pad);
+  text-align: right;
+  color: var(--faded-gray);
+  user-select: none;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.draft {
+  flex: 1;
+  min-width: 0;
+  min-height: 160px;
+  resize: vertical;
+  border: none;
+  outline: none;
+  padding: 14px var(--pad) 14px 6px;
+  background: transparent;
+  color: oklch(0.96 0.015 239);
+  caret-color: var(--spark-blue);
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+
+.draft::placeholder {
+  color: var(--faded-gray);
+}
+
+.draft[readonly] {
+  cursor: default;
+}
+
+/* compare sheet: the model answer and the points to check against */
+
+.points {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.points li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-weight: 700;
+}
+
+.points li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--spark-blue);
+  flex-shrink: 0;
+  transform: translateY(-2px);
+}
+
+.sheet-body .label {
+  color: var(--muted-foreground);
+  font-weight: 800;
+  letter-spacing: 0.053em;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.sheet-body .code {
+  margin-bottom: 12px;
 }
 
 /* memory diagram */
@@ -660,6 +751,8 @@ h1.q {
   border-top: 2px solid var(--border);
   display: none;
   z-index: 10;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .sheet.show {
@@ -697,6 +790,11 @@ h1.q {
   border-top-color: var(--destructive);
 }
 
+.sheet.compare {
+  background: var(--secondary);
+  border-top-color: var(--spark-blue);
+}
+
 .sheet-inner {
   max-width: 620px;
   margin: 0 auto;
@@ -716,6 +814,10 @@ h1.q {
 
 .sheet.bad .sheet-title {
   color: var(--destructive);
+}
+
+.sheet.compare .sheet-title {
+  color: var(--spark-blue);
 }
 
 .sheet-body {
@@ -768,11 +870,11 @@ h1.q {
   height: 14px;
 }
 
-.stat, .xp, .key, .token {
+.stat, .xp, .key {
   font-variant-numeric: tabular-nums;
 }
 
-.choice:active, .token:active {
+.choice:active {
   transform: translateY(var(--lift));
   box-shadow: none;
 }
@@ -940,7 +1042,7 @@ body.reference main {
 <div class="sheet" id="sheet" role="status" aria-live="polite"><div class="sheet-inner">
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-body" id="sheetBody"></div>
-  <div class="footer-inner"><button class="btn" id="nextBtn">Continue</button></div>
+  <div class="footer-inner"><button class="btn secondary" id="missBtn" hidden>Not yet</button><button class="btn" id="nextBtn">Continue</button></div>
 </div></div>
 
 <script>
@@ -1216,7 +1318,7 @@ const LESSON = {{LESSON_PACK}};
 const lesson = LESSON.screens;
 document.title = LESSON.title;
 
-let i = 0, xp = 0, hearts = 3, selected = null, built = [], mistakes = [], skipped = [], firstTry = true, retry = false;
+let i = 0, xp = 0, hearts = 3, selected = null, draft = "", answers = [], grading = false, mistakes = [], skipped = [], firstTry = true, retry = false;
 
 const app = document.getElementById("app");
 const progress = document.getElementById("progress");
@@ -1224,6 +1326,7 @@ const checkBtn = document.getElementById("checkBtn");
 const skipBtn = document.getElementById("skipBtn");
 const sheet = document.getElementById("sheet");
 const nextBtn = document.getElementById("nextBtn");
+const missBtn = document.getElementById("missBtn");
 const soundBtn = document.getElementById("soundBtn");
 
 function sound(name) {
@@ -1279,7 +1382,7 @@ function shuffleArray(arr) {
 function render() {
   renderHearts();
   sheet.classList.remove("show");
-  selected = null; built = []; firstTry = !retry; retry = false;
+  selected = null; firstTry = !retry; retry = false;
   checkBtn.disabled = true;
   checkBtn.textContent = "Check";
   skipBtn.style.display = "";
@@ -1330,43 +1433,52 @@ function render() {
     return;
   }
 
-  if (q.type === "build") {
-    var bankTokens = shuffleArray(q.tokens);
-    if (bankTokens.length > 1 && JSON.stringify(bankTokens) === JSON.stringify(q.answer)) {
-      bankTokens = bankTokens.reverse();
-    }
-    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow || "Assemble") + '</div>' +
+  /* A retry starts from the starter again, so the second attempt is recall, not an edit. */
+  if (q.type === "write") {
+    app.innerHTML = '<div class="eyebrow">' + esc(q.eyebrow || "Write") + '</div>' +
       '<h1 class="q">' + esc(q.title) + '</h1>' +
       (q.teach ? '<div class="prose"><p>' + esc(q.teach) + '</p></div>' : "") +
       codeBlock(q.code, q.hl) +
-      '<div class="token-bank answer-line" id="ans"></div>' +
-      '<div class="token-bank" id="bank">' +
-        bankTokens.map(function (t, n) {
-          return '<button class="token" data-n="' + n + '">' + esc(t) + '</button>';
-        }).join("") +
+      '<div class="editor">' +
+        '<div class="editor-bar"><span class="editor-dots"><i></i><i></i><i></i></span>' +
+          '<span class="editor-file">' + esc(q.file || "answer") + '</span></div>' +
+        '<div class="editor-body"><pre class="gutter" id="gutter" aria-hidden="true"></pre>' +
+          '<textarea class="draft" id="draft" spellcheck="false" autocapitalize="off" autocomplete="off" ' +
+            'aria-label="Your answer" placeholder="Type your answer"></textarea></div>' +
       '</div>' +
-      '<div class="sub">Tap the tokens in order. Tap the answer line to clear it.</div>';
-    const ans = document.getElementById("ans");
-    document.querySelectorAll("#bank .token").forEach(function (b) {
-      b.onclick = function () {
-        if (b.classList.contains("picked")) return;
-        built.push(bankTokens[+b.dataset.n]);
-        b.classList.add("picked");
-        renderBuilt();
-        sound("select");
-      };
-    });
-    ans.onclick = function () {
-      if (!built.length) return;
-      built = [];
-      document.querySelectorAll("#bank .token").forEach(function (x) { x.classList.remove("picked"); });
-      renderBuilt();
-      sound("select");
+      '<div class="sub">Write it from memory, then compare. Ctrl+Enter checks. Tab indents.</div>';
+    const box = document.getElementById("draft");
+    const gutter = document.getElementById("gutter");
+    const starter = q.starter || "";
+    box.value = starter;
+    box.oninput = function () {
+      gutter.textContent = box.value.split("\n").map(function (_, n) { return n + 1; }).join("\n");
+      checkBtn.disabled = !box.value.trim() || box.value === starter;
     };
-    function renderBuilt() {
-      ans.innerHTML = built.map(function (t) { return '<span class="token">' + esc(t) + '</span>'; }).join("");
-      checkBtn.disabled = built.length === 0;
-    }
+    box.onscroll = function () { gutter.scrollTop = box.scrollTop; };
+    /* Editor keys: Tab indents, Enter keeps the line's indent and adds a level after { ( [ or :. */
+    box.onkeydown = function (e) {
+      if (e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+        box.setRangeText("  ", box.selectionStart, box.selectionEnd, "end");
+        box.oninput();
+      } else if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const before = box.value.slice(0, box.selectionStart);
+        const line = before.slice(before.lastIndexOf("\n") + 1);
+        const indent = /^[ \t]*/.exec(line)[0] + (/[{(\[:]\s*$/.test(line) ? "  " : "");
+        box.setRangeText("\n" + indent, box.selectionStart, box.selectionEnd, "end");
+        box.oninput();
+      } else if (e.key === "Escape") {
+        box.blur();
+      }
+    };
+    box.oninput();
+    /* Start the caret on the starter's first blank line, where the answer goes. */
+    const blank = /\n[ \t]*(?=\n)/.exec(starter);
+    const at = blank ? blank.index + blank[0].length : starter.length;
+    box.focus();
+    box.setSelectionRange(at, at);
     return;
   }
 
@@ -1401,7 +1513,19 @@ document.addEventListener("keydown", function (e) {
   const q = lesson[i];
   if (!q) return;
   if (sheet.classList.contains("show")) {
+    if (grading) {
+      if (e.key === "1" || e.key === "2") { e.preventDefault(); grade(e.key === "2"); }
+      return;
+    }
     if (e.key === "Enter") { e.preventDefault(); next(); }
+    return;
+  }
+  /* Enter is a new line in an open answer, so Ctrl+Enter checks it. */
+  if (q.type === "write") {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (!checkBtn.disabled) check();
+    }
     return;
   }
   if (q.choices && ["1", "2", "3", "4"].indexOf(e.key) !== -1) {
@@ -1419,23 +1543,50 @@ checkBtn.onclick = check;
 skipBtn.onclick = function () { if (lesson[i] && lesson[i].type !== "intro" && lesson[i].type !== "info") { skipped.push(lesson[i].title); i++; render(); } };
 document.getElementById("restartBtn").onclick = function () { restart(); };
 nextBtn.onclick = next;
+missBtn.onclick = function () { grade(false); };
 
 function check() {
   const q = lesson[i];
   if (q.type === "intro" || q.type === "info") { i++; render(); return; }
+  if (q.type === "write") { compare(q); return; }
 
-  let correct = false;
-  if (q.type === "build") {
-    correct = JSON.stringify(built) === JSON.stringify(q.answer);
-  } else {
-    correct = !!(q.choices[selected] && q.choices[selected].ok);
-    /* A miss marks only the pick, so the retry is still recall. */
-    document.querySelectorAll(".choice").forEach(function (el, n) {
-      if (correct && q.choices[n].ok) el.classList.add("correct");
-      else if (n === selected && !correct) el.classList.add("wrong");
-    });
-  }
+  const correct = !!(q.choices[selected] && q.choices[selected].ok);
+  /* A miss marks only the pick, so the retry is still recall. */
+  document.querySelectorAll(".choice").forEach(function (el, n) {
+    if (correct && q.choices[n].ok) el.classList.add("correct");
+    else if (n === selected && !correct) el.classList.add("wrong");
+  });
+  settle(q, correct);
+}
 
+/* An open answer has no key to match, so the learner grades it against the model answer. */
+function compare(q) {
+  const box = document.getElementById("draft");
+  draft = box.value;
+  box.readOnly = true;
+  grading = true;
+  document.getElementById("sheetTitle").textContent = "Compare with the model answer";
+  document.getElementById("sheetBody").innerHTML =
+    '<div class="label">Model answer</div>' + codeBlock(q.answer) +
+    '<div class="label">Check yours for</div>' +
+    '<ul class="points">' + q.points.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>";
+  sheet.className = "sheet show compare";
+  missBtn.hidden = false;
+  nextBtn.className = "btn";
+  nextBtn.textContent = "I got it";
+  document.getElementById("footer").style.display = "none";
+}
+
+/* Every graded answer goes back to the agent, which reviews what the learner wrote. */
+function grade(ok) {
+  const q = lesson[i];
+  grading = false;
+  missBtn.hidden = true;
+  answers.push({ question: q.title, answer: draft, graded: ok ? "got it" : "not yet" });
+  settle(q, ok);
+}
+
+function settle(q, correct) {
   const title = document.getElementById("sheetTitle");
   const body = document.getElementById("sheetBody");
 
@@ -1466,6 +1617,7 @@ function check() {
 
 /* After a miss, the same question comes back with its choices in a new order. */
 function next() {
+  if (grading) { grade(true); return; }
   if (retry) {
     delete lesson[i]._shuffled;
     render();
@@ -1477,8 +1629,9 @@ function next() {
 }
 
 function restart() {
-  i = 0; xp = 0; hearts = 3; mistakes = []; skipped = []; retry = false;
+  i = 0; xp = 0; hearts = 3; mistakes = []; skipped = []; answers = []; retry = false; grading = false;
   lesson.forEach(function (s) { delete s._shuffled; });
+  missBtn.hidden = true;
   nextBtn.textContent = "Continue";
   nextBtn.onclick = next;
   nextBtn.className = "btn";
@@ -1530,7 +1683,7 @@ function renderEnd() {
 function askForNext() {
   var item = document.getElementById("nextItem");
   function note(text) { item.innerHTML = '<p class="lock-note">' + esc(text) + '</p>'; }
-  fetch("/done", { method: "POST", body: JSON.stringify({ title: LESSON.title, xp: xp, misses: Array.from(new Set(mistakes)) }) })
+  fetch("/done", { method: "POST", body: JSON.stringify({ title: LESSON.title, xp: xp, misses: Array.from(new Set(mistakes)), answers: answers }) })
     .then(function (r) { if (!r.ok) throw r; note("Your agent is writing the next lesson. It opens in a new tab."); })
     .catch(function () { note("Tell your agent you finished. It writes the next lesson."); });
 }

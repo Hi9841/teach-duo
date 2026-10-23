@@ -25,11 +25,12 @@ status: "done"
 lesson: "<title>"
 xp: "40"
 misses: "[\"<question title>\"]"
+answers: "[{\"question\": \"<title>\", \"answer\": \"<what they wrote>\", \"graded\": \"got it\"}]"
 ```
 
-That exit is your cue. Write the learning record if they earned one, then build the next lesson with `--wait`. Use `--open` instead to only open the file.
+That exit is your cue. `answers` has one entry for each graded `write` attempt. The learner graded it, so check it yourself. Write the learning record if they earned one, then build the next lesson with `--wait`. Use `--open` instead to only open the file.
 
-It refuses emoji, an unknown screen type, uneven options, a missing explanation, and any output path inside the skill directory. A bad lesson exits 1 with `status: "error"`. Fix the JSON and run the command again. Do not patch the generated HTML.
+It refuses emoji, an unknown screen type, uneven options, a missing explanation, a `write` screen without a model answer or points, and any output path inside the skill directory. A bad lesson exits 1 with `status: "error"`. Fix the JSON and run the command again. Do not patch the generated HTML.
 
 ## Lesson JSON
 
@@ -41,12 +42,13 @@ It refuses emoji, an unknown screen type, uneven options, a missing explanation,
   "source": {"label": "cppreference: new and delete", "url": "https://example.com"},
   "screens": [
     {"type": "intro", "title": "Stack is automatic. Heap is manual.", "text": "Two sentences.", "code": "int x = 5;", "cta": "Start"},
-    {"type": "pick", "title": "Where does score live?", "choices": [{"t": "On the stack", "ok": true}, {"t": "On the heap", "ok": false}], "why": "A local dies when the function returns."}
+    {"type": "pick", "title": "Where does score live?", "choices": [{"t": "On the stack", "ok": true}, {"t": "On the heap", "ok": false}], "why": "A local dies when the function returns."},
+    {"type": "write", "title": "Free the buffer from line 1.", "file": "main.cpp", "code": "int* buf = new int[n];\nuse(buf);", "answer": "delete[] buf;", "points": ["Uses delete[], not delete", "Frees buf exactly once"], "why": "An array from new[] must go back through delete[]."}
   ]
 }
 ```
 
-The first screen is `intro` or `info`. Later screens are `info`, `pick`, `truefalse`, `mem`, or `build`. Interleave `info` concept screens with retrieval questions. Read [design.md](design.md) before writing them.
+The first screen is `intro` or `info`. Later screens are `info`, `pick`, `truefalse`, `mem`, or `write`. Interleave `info` concept screens with retrieval questions. Read [design.md](design.md) before writing them.
 
 ## Reference page
 

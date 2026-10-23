@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "assets" / "lesson.html"
-TYPES = {"intro", "info", "pick", "mem", "build", "truefalse"}
+TYPES = {"intro", "info", "pick", "mem", "write", "truefalse"}
 EMOJI = re.compile(
     "[\U0001F000-\U0001FAFF\u2190-\u21FF\u2300-\u27BF\u2600-\u26FF\u2B00-\u2BFF\uFE0F]"
 )
@@ -105,13 +105,15 @@ def validate(pack):
                 _need(screen, "cta", ident)
             continue
         _need(screen, "why", ident)
-        if kind == "build":
-            tokens = screen.get("tokens")
-            answer = screen.get("answer")
-            if not isinstance(tokens, list) or not tokens or not all(isinstance(t, str) for t in tokens):
-                raise ValueError(f"{ident} needs a token list")
-            if not isinstance(answer, list) or not answer or not all(isinstance(t, str) for t in answer):
-                raise ValueError(f"{ident} needs an answer list")
+        if kind == "write":
+            _need(screen, "answer", ident)
+            points = screen.get("points")
+            if (not isinstance(points, list) or not 1 <= len(points) <= 4
+                    or not all(isinstance(p, str) and p.strip() for p in points)):
+                raise ValueError(f"{ident} needs one to four points to check the answer against")
+            for key in ("starter", "file"):
+                if not isinstance(screen.get(key, ""), str):
+                    raise ValueError(f"{ident} {key} must be a string")
             continue
         _choices(screen, ident)
         if kind == "mem":
@@ -245,7 +247,8 @@ def main():
             if args.wait:
                 result = wait_for_finish(output)
                 report(status="done", lesson=result.get("title", ""), xp=str(result.get("xp", 0)),
-                       misses=json.dumps(result.get("misses", []), ensure_ascii=False))
+                       misses=json.dumps(result.get("misses", []), ensure_ascii=False),
+                       answers=json.dumps(result.get("answers", []), ensure_ascii=False))
         else:
             output = reference_file(args.fragment, args.output, args.title)
             report(status="wrote", path=str(output), kind="reference")
