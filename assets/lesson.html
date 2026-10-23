@@ -847,6 +847,8 @@ h1.q {
 }
 
 /* concept tag: cn-badge, h-6 border-2 px-2.5 extrabold uppercase tracking-wide */
+.info-p { margin: 0 0 12px; }
+.info-p:last-child { margin-bottom: 0; }
 .info-tag {
   display: flex;
   width: fit-content;
@@ -1318,7 +1320,7 @@ const LESSON = {{LESSON_PACK}};
 const lesson = LESSON.screens;
 document.title = LESSON.title;
 
-let i = 0, xp = 0, hearts = 3, selected = null, draft = "", answers = [], grading = false, mistakes = [], skipped = [], firstTry = true, retry = false;
+let i = 0, xp = 0, hearts = 3, selected = null, draft = "", answers = [], grading = false, pending = false, mistakes = [], skipped = [], firstTry = true, retry = false;
 
 const app = document.getElementById("app");
 const progress = document.getElementById("progress");
@@ -1400,7 +1402,7 @@ function render() {
       '<h1 class="q">' + esc(q.title) + '</h1>' +
       '<div class="bubble info-bubble">' +
         (q.type === "info" ? '<div class="info-tag">' + icon("bookOpen") + ' <span>Concept</span></div>' : '') +
-        esc(q.text) +
+        String(q.text).split("\n\n").map(function (para) { return '<p class="info-p">' + esc(para) + '</p>'; }).join("") +
       '</div>' +
       codeBlock(q.code, q.hl) +
       '<div class="sub">' + subText + '</div>';
@@ -1446,7 +1448,7 @@ function render() {
           '<textarea class="draft" id="draft" spellcheck="false" autocapitalize="off" autocomplete="off" ' +
             'aria-label="Your answer" placeholder="Type your answer"></textarea></div>' +
       '</div>' +
-      '<div class="sub">Write it from memory, then compare. Ctrl+Enter checks. Tab indents.</div>';
+      '<div class="sub">Write it from memory. Your teacher checks it. Ctrl+Enter sends. Tab indents.</div>';
     const box = document.getElementById("draft");
     const gutter = document.getElementById("gutter");
     const starter = q.starter || "";
@@ -1513,6 +1515,7 @@ document.addEventListener("keydown", function (e) {
   const q = lesson[i];
   if (!q) return;
   if (sheet.classList.contains("show")) {
+    if (pending) { e.preventDefault(); return; }
     if (grading) {
       if (e.key === "1" || e.key === "2") { e.preventDefault(); grade(e.key === "2"); }
       return;
@@ -1548,7 +1551,7 @@ missBtn.onclick = function () { grade(false); };
 function check() {
   const q = lesson[i];
   if (q.type === "intro" || q.type === "info") { i++; render(); return; }
-  if (q.type === "write") { compare(q); return; }
+  if (q.type === "write") { if (q.grade === "self") compare(q); else askAgent(q); return; }
 
   const correct = !!(q.choices[selected] && q.choices[selected].ok);
   /* A miss marks only the pick, so the retry is still recall. */
@@ -1557,6 +1560,34 @@ function check() {
     else if (n === selected && !correct) el.classList.add("wrong");
   });
   settle(q, correct);
+}
+
+/* The agent reads the written answer and sends a verdict. If no verdict comes, the learner self-grades. */
+function askAgent(q) {
+  const box = document.getElementById("draft");
+  draft = box.value;
+  box.readOnly = true;
+  pending = true;
+  document.getElementById("sheetTitle").textContent = "Checking your answer";
+  document.getElementById("sheetBody").textContent = "Your teacher is reading it. This takes a moment.";
+  sheet.className = "sheet show compare";
+  nextBtn.hidden = true;
+  missBtn.hidden = true;
+  document.getElementById("footer").style.display = "none";
+  fetch("/grade", { method: "POST", body: JSON.stringify({ question: q.title, answer: draft, model: q.answer, points: q.points }) })
+    .then(function (r) { if (!r.ok) throw r; return r.json(); })
+    .then(function (v) {
+      if (v.timeout || typeof v.ok !== "boolean") throw v;
+      pending = false;
+      nextBtn.hidden = false;
+      answers.push({ question: q.title, answer: draft, graded: v.ok ? "teacher: got it" : "teacher: not yet" });
+      settle(q, v.ok, v.feedback);
+    })
+    .catch(function () {
+      pending = false;
+      nextBtn.hidden = false;
+      compare(q);
+    });
 }
 
 /* An open answer has no key to match, so the learner grades it against the model answer. */
@@ -1586,7 +1617,7 @@ function grade(ok) {
   settle(q, ok);
 }
 
-function settle(q, correct) {
+function settle(q, correct, feedback) {
   const title = document.getElementById("sheetTitle");
   const body = document.getElementById("sheetBody");
 
@@ -1608,7 +1639,7 @@ function settle(q, correct) {
     window.setTimeout(function () { sound("heartLost"); }, 200);
   }
 
-  body.textContent = q.why;
+  body.textContent = (feedback ? feedback + " " : "") + q.why;
   nextBtn.textContent = correct ? "Continue" : "Try again";
   document.getElementById("footer").style.display = "none";
   sheet.classList.add("show");
@@ -1617,6 +1648,7 @@ function settle(q, correct) {
 
 /* After a miss, the same question comes back with its choices in a new order. */
 function next() {
+  if (pending) return;
   if (grading) { grade(true); return; }
   if (retry) {
     delete lesson[i]._shuffled;
@@ -1629,9 +1661,10 @@ function next() {
 }
 
 function restart() {
-  i = 0; xp = 0; hearts = 3; mistakes = []; skipped = []; answers = []; retry = false; grading = false;
+  i = 0; xp = 0; hearts = 3; mistakes = []; skipped = []; answers = []; retry = false; grading = false; pending = false;
   lesson.forEach(function (s) { delete s._shuffled; });
   missBtn.hidden = true;
+  nextBtn.hidden = false;
   nextBtn.textContent = "Continue";
   nextBtn.onclick = next;
   nextBtn.className = "btn";

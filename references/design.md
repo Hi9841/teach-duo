@@ -4,7 +4,7 @@ The page is [assets/lesson.html](../assets/lesson.html). You do not restyle it. 
 
 ## Shell
 
-Top bar, fixed order: restart, mute, progress, three hearts, XP. One question on screen. Check stays disabled until they answer. The feedback sheet is one or two sentences on the mechanism, then Continue. A wrong answer loses a heart, marks only the wrong pick, and the button says Try again. The same question comes back with its choices in a new order, so the learner never repeats the whole lesson for one miss. A `write` answer has no key to match. Check opens a compare sheet with the model answer and the points, and the learner presses I got it or Not yet. Not yet costs a heart like a miss, and the question comes back with the box reset to the starter. Zero hearts does not end the run. The last screen shows XP, the misses, the reference, and one primary source. Next lesson is enabled once every question was answered correctly, retries included. It reports to the helper, and the agent writes the next lesson. A skip leaves it disabled, with the line "Answer every question correctly to open the next lesson."
+Top bar, fixed order: restart, mute, progress, three hearts, XP. One question on screen. Check stays disabled until they answer. The feedback sheet is one or two sentences on the mechanism, then Continue. A wrong answer loses a heart, marks only the wrong pick, and the button says Try again. The same question comes back with its choices in a new order, so the learner never repeats the whole lesson for one miss. A `write` answer has no key to match. Check sends the answer to the agent, which grades it against `points` and replies with a short verdict. The sheet shows that feedback. With `"grade": "self"`, or when no verdict arrives, Check opens a compare sheet with the model answer and the points, and the learner presses I got it or Not yet. Not yet costs a heart like a miss, and the question comes back with the box reset to the starter. Zero hearts does not end the run. The last screen shows XP, the misses, the reference, and one primary source. Next lesson is enabled once every question was answered correctly, retries included. It reports to the helper, and the agent writes the next lesson. A skip leaves it disabled, with the line "Answer every question correctly to open the next lesson."
 
 Hearts: 3. First-try correct answers: 10 XP. Keys `1`-`4` select, Enter checks, Enter again continues. The `write` box is an editor with line numbers. Enter keeps the indent, Ctrl+Enter checks, and Tab indents. On the compare sheet, `1` is Not yet and `2` is I got it. A handled key never also clicks the focused button.
 
@@ -28,7 +28,7 @@ Type is Nunito, extrabold for buttons, labels, and titles. Buttons and choices u
 
 ## Screens
 
-One idea per lesson. An intro or info screen plus practice questions. Interleave reading with retrieval: present a clear, tight `info` screen to read first, then one or two questions testing that exact mechanism, then the next concept screen. Never dump everything up front.
+One idea per lesson. An intro or info screen plus practice questions. Interleave reading with retrieval: present a clear `info` screen to read first, then one or two questions testing that exact mechanism, then the next concept screen. Never dump everything up front.
 
 1. **intro.** Overview for the first screen. Title, two sentences in `text`, optional `code`, and `cta` such as `Start`.
 2. **info.** Concept explanation to read before practicing. Title, concise `text`, optional `code`, optional `cta` (`Continue`). Teach one atomic mechanism before quizzing it.
@@ -38,6 +38,21 @@ One idea per lesson. An intro or info screen plus practice questions. Interleave
 6. **write.** An open answer the learner types from memory: a line of code, a short function, a fix, or one sentence that explains. `title` is the task. Optional `code` is context to read. Optional `starter` prefills the editor with what they must not retype. Optional `file` names the editor tab, such as `main.cpp`, so the language is clear. `answer` is one model answer. `points` is one to four things every correct answer does. See [Open answers](#open-answers).
 
 `why` is required on question screens. One or two sentences on the mechanism. `hl` is a 1-based line number inside `code`, not HTML. The helper escapes every string.
+
+## Explain enough
+
+A learner who reads an `info` screen must be able to answer its question and say why. Short is not the goal. Clear is. Give each concept the full chain, not only the label.
+
+- **Length.** An `info` `text` is two to four short paragraphs. Separate paragraphs with a blank line (`
+
+`). The page renders each one as its own paragraph.
+- **Chain.** In this order: (1) what it is, in plain words, with every new term defined at first use. (2) An analogy from daily life. (3) Why it works, the mechanism one step at a time. (4) A concrete walk-through with real numbers or a real input, shown in `code`.
+- **The "why" gap.** After each mechanism, say what would go wrong without it. This is the part learners skip when they only get a label.
+- **Numbers.** Use a real scale. "1,000,000 rows, about 20 steps" teaches more than "much faster".
+- **Name the common mistake.** One sentence on what people wrongly believe, before the question tests it.
+- **Open with the hook.** The `intro` states the question the learner asked in their own words, and says what they will be able to answer at the end.
+- **Close with a recap.** The last `info` screen before the end lists three or four lines: the whole idea in order, from the question to the answer. Then one `write` screen asks them to explain it back in their own words (Feynman). `points` name the steps of the chain.
+- **Split, do not cram.** If one concept needs more than four paragraphs, make two `info` screens with a question between them.
 
 Options on one screen stay within two words of each other. The prompt is one sentence. Quiz the mechanism that causes the bug. A link needs its label. `source` is the best page you actually found.
 
@@ -51,7 +66,7 @@ Use `write` when the skill is to produce code, not to recognize it. Put it after
 - A correct answer can differ from the model in names, order, and layout. `points` are what you check instead. Make each one visible in the code: "frees with delete[], not delete", not "is correct". Name the mechanism and the usual bug. Do not grade style.
 - `why` comes after the self-grade. One or two sentences on the mechanism, the same as other questions.
 
-The learner grades the answer, so the helper returns every written answer to you. Read them. When an answer marked "got it" is wrong, say so and teach the gap in the next lesson. Do not write a learning record for it.
+You grade each written answer through the helper (see live-session.md, Grade written answers). Be strict on `points` and generous on wording. Prose answers such as a Feynman recap must use agent grading, because a learner cannot judge their own gaps. Use `"grade": "self"` only for a short code line where the model answer is exact. Teach any gap in the next lesson. Do not write a learning record for a wrong answer.
 
 ## Reference pages
 

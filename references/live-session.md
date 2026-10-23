@@ -28,7 +28,29 @@ misses: "[\"<question title>\"]"
 answers: "[{\"question\": \"<title>\", \"answer\": \"<what they wrote>\", \"graded\": \"got it\"}]"
 ```
 
-That exit is your cue. `answers` has one entry for each graded `write` attempt. The learner graded it, so check it yourself. Write the learning record if they earned one, then build the next lesson with `--wait`. Use `--open` instead to only open the file.
+## Grade written answers
+
+A `write` screen is graded by you, not by the learner (`"grade": "self"` on the screen restores the old compare sheet). When the learner presses Check, the page posts the answer to the helper, and the helper prints a block like this and waits up to 300 seconds:
+
+```text
+status: "grade"
+id: "1"
+question: "<title>"
+answer: "<what they wrote>"
+model: "<model answer>"
+points: "[\"<point>\"]"
+```
+
+Watch the build output with Monitor so each block reaches you at once. Grade the answer against `points`. The wording may differ from the model. Then reply:
+
+```text
+python <skill-directory>/scripts/lesson.py verdict <workspace> <id> --ok --feedback "One or two sentences: what was right, what was missing."
+python <skill-directory>/scripts/lesson.py verdict <workspace> <id> --not-yet --feedback "Name the missing point."
+```
+
+The page shows your feedback, then the question's `why`. A not-yet costs a heart like any miss. If no verdict arrives in 300 seconds, or the page is opened without the helper, the learner self-grades on the compare sheet. Answer fast.
+
+That exit is your cue. `answers` has one entry for each graded `write` attempt, marked `teacher:` when you graded it and `got it` or `not yet` when the learner self-graded. Check the self-graded ones yourself. Write the learning record if they earned one, then build the next lesson with `--wait`. Use `--open` instead to only open the file.
 
 It refuses emoji, an unknown screen type, uneven options, a missing explanation, a `write` screen without a model answer or points, and any output path inside the skill directory. A bad lesson exits 1 with `status: "error"`. Fix the JSON and run the command again. Do not patch the generated HTML.
 
